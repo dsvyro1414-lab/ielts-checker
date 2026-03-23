@@ -153,6 +153,7 @@ In the annotated text, mark ALL errors: grammar, vocabulary, spelling, punctuati
       const raw = data.content.map((b: any) => b.text || "").join("");
       const clean = raw.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
+      console.log("API response parsed:", parsed);
       setResult(parsed);
     } catch (e: any) {
       setError("Ошибка: " + e.message);
