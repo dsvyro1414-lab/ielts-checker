@@ -133,7 +133,7 @@ CRITICAL SCORING INSTRUCTIONS:
 In the annotated text, mark ALL errors: grammar, vocabulary, spelling, punctuation, awkward phrasing, and cohesion issues. Keep the original text intact, just wrap problem areas. Preserve line breaks as <br/>.`;
 
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const res = await fetch("/api/Check", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
