@@ -1,10 +1,10 @@
 import { useState, useCallback } from "react";
 
 const CRITERIA = [
-  { key: "ta", label: "Task Achievement", icon: "◎" },
-  { key: "cc", label: "Coherence & Cohesion", icon: "⇄" },
-  { key: "lr", label: "Lexical Resource", icon: "A" },
-  { key: "gra", label: "Grammatical Range", icon: "✓" },
+  { key: "ta", label: "Task Achievement", icon: "\u{1F3AF}" },
+  { key: "cc", label: "Coherence & Cohesion", icon: "\u{1F517}" },
+  { key: "lr", label: "Lexical Resource", icon: "\u{1F4DA}" },
+  { key: "gra", label: "Grammatical Range", icon: "\u{270F}\u{FE0F}" },
 ];
 
 const BAND_COLOR = (score: number) =>
