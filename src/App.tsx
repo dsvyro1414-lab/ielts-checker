@@ -480,7 +480,7 @@ In the annotated text, mark ALL errors: grammar, vocabulary, spelling, punctuati
                     }}
                   >
                     <div style={{ fontSize: 13, fontWeight: 700, color: "#374151" }}>
-                      {c.label}
+                      {c.icon} {c.label}
                     </div>
                     <ScoreBadge score={result[c.key]} />
                   </div>
