@@ -21,7 +21,7 @@ interface Props {
 
 function UploadIcon() {
   return (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
       <polyline points="17 8 12 3 7 8" />
       <line x1="12" y1="3" x2="12" y2="15" />
@@ -30,19 +30,8 @@ function UploadIcon() {
 }
 
 export function TaskForm({
-  taskMode,
-  onTaskChange,
-  question,
-  setQuestion,
-  essay,
-  setEssay,
-  image,
-  imagePreview,
-  onImageChange,
-  loading,
-  isReady,
-  onSubmit,
-  s,
+  taskMode, onTaskChange, question, setQuestion, essay, setEssay,
+  image, imagePreview, onImageChange, loading, isReady, onSubmit, s,
 }: Props) {
   const [focusedField, setFocusedField] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -58,31 +47,34 @@ export function TaskForm({
     e.target.value = "";
   };
 
-  const inputFocusStyle = (field: string): React.CSSProperties =>
+  const focusStyle = (field: string): React.CSSProperties =>
     focusedField === field
-      ? { borderColor: "#7B6FFF", boxShadow: "0 0 0 4px rgba(123,111,255,0.12), inset 0 2px 4px rgba(0,0,0,0.04)" }
+      ? { borderColor: "var(--border-focus)", boxShadow: "0 0 0 3px rgba(124,154,126,0.15)", background: "#fff" }
       : {};
 
   const essayTextarea = (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 7 }}>
         <label className="field-label" htmlFor="essay-input">{s.essayLabel}</label>
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            background: wordCountOk ? "#ECFDF5" : wordCount > 0 ? "#FFF1F0" : "#F5F5F5",
-            border: `1.5px solid ${wordCountOk ? "#3EC99A" : wordCount > 0 ? "#FF6B5B" : "#e5e7eb"}`,
-            borderRadius: 999,
-            padding: "3px 12px",
-          }}
-        >
-          <span style={{ fontSize: 13, fontWeight: 700, color: wordCountOk ? "#2BA87E" : wordCount > 0 ? "#C94B3B" : "#9ca3af", fontFamily: "'Nunito', system-ui, sans-serif" }}>
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 5,
+          padding: "2px 10px",
+          borderRadius: 999,
+          border: `1px solid ${wordCountOk ? "#C8DAC9" : wordCount > 0 ? "#EDCDC9" : "var(--border)"}`,
+          background: wordCountOk ? "#EEF4EE" : wordCount > 0 ? "#FDF3F2" : "#F5F3EF",
+        }}>
+          <span style={{
+            fontSize: 12,
+            fontWeight: 700,
+            fontFamily: "'Nunito', system-ui, sans-serif",
+            color: wordCountOk ? "#5A7A5C" : wordCount > 0 ? "#C0392B" : "var(--text-muted)",
+          }}>
             {s.words(wordCount)}
           </span>
           {wordCount > 0 && !wordCountOk && (
-            <span style={{ fontSize: 12, color: "#C94B3B", fontWeight: 600 }}>
+            <span style={{ fontSize: 11, color: "#C0392B", fontWeight: 600 }}>
               {s.minWords(minWords)}
             </span>
           )}
@@ -96,21 +88,18 @@ export function TaskForm({
         onBlur={() => setFocusedField(null)}
         placeholder={s.essayPlaceholder}
         rows={12}
-        className="clay-input"
-        style={{ ...inputFocusStyle("essay") }}
+        className="field-input"
+        style={focusStyle("essay")}
         aria-label={s.essayLabel}
       />
     </div>
   );
 
   return (
-    <div
-      className="clay-white"
-      style={{ padding: "28px 28px 24px", marginBottom: 20 }}
-    >
+    <div className="card" style={{ padding: "24px 24px 20px", marginBottom: 16 }}>
       <TaskToggle taskMode={taskMode} onChange={onTaskChange} s={s} />
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
         {taskMode === "task2" ? (
           <>
             <div>
@@ -123,8 +112,8 @@ export function TaskForm({
                 onBlur={() => setFocusedField(null)}
                 placeholder={s.questionPlaceholder}
                 rows={3}
-                className="clay-input"
-                style={{ ...inputFocusStyle("question") }}
+                className="field-input"
+                style={focusStyle("question")}
                 aria-label={s.questionLabel}
               />
             </div>
@@ -134,31 +123,16 @@ export function TaskForm({
           <>
             <div>
               <label className="field-label">{s.imageLabel}</label>
-
               {imagePreview ? (
-                <div style={{ border: "2px solid rgba(0,0,0,0.07)", borderRadius: 16, overflow: "hidden", background: "#FAFAFA" }}>
-                  <img
-                    src={imagePreview}
-                    alt="Uploaded chart"
-                    style={{ width: "100%", maxHeight: 280, objectFit: "contain", display: "block", background: "#fff" }}
-                  />
-                  <div style={{ padding: "10px 16px", borderTop: "1px solid rgba(0,0,0,0.07)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: 13, color: "#888", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "70%" }}>
+                <div style={{ border: "1px solid var(--border)", borderRadius: 10, overflow: "hidden", background: "#FAFAFA" }}>
+                  <img src={imagePreview} alt="Uploaded chart" style={{ width: "100%", maxHeight: 260, objectFit: "contain", display: "block", background: "#fff" }} />
+                  <div style={{ padding: "10px 14px", borderTop: "1px solid var(--border)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 13, color: "var(--text-muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: "70%" }}>
                       {image?.name}
                     </span>
                     <button
                       onClick={() => fileInputRef.current?.click()}
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color: "#7B6FFF",
-                        background: "none",
-                        border: "none",
-                        cursor: "pointer",
-                        padding: "4px 10px",
-                        borderRadius: 8,
-                        fontFamily: "'Nunito', system-ui, sans-serif",
-                      }}
+                      style={{ fontSize: 13, fontWeight: 700, color: "var(--sage)", background: "none", border: "none", cursor: "pointer", padding: "4px 8px", borderRadius: 6, fontFamily: "'Nunito', system-ui, sans-serif" }}
                     >
                       {s.imageChange}
                     </button>
@@ -174,45 +148,26 @@ export function TaskForm({
                   aria-label={s.imagePlaceholder}
                 >
                   <UploadIcon />
-                  <span style={{ fontSize: 15, fontWeight: 600, fontFamily: "'Nunito', system-ui, sans-serif" }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, fontFamily: "'Nunito', system-ui, sans-serif" }}>
                     {s.imagePlaceholder}
                   </span>
                 </div>
               )}
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png"
-                onChange={handleFileChange}
-                style={{ display: "none" }}
-                aria-hidden="true"
-              />
+              <input ref={fileInputRef} type="file" accept="image/jpeg,image/png" onChange={handleFileChange} style={{ display: "none" }} aria-hidden="true" />
             </div>
             {essayTextarea}
           </>
         )}
 
         <button
-          className={`btn-clay btn-primary-clay`}
+          className="btn-primary"
           onClick={onSubmit}
           disabled={loading || !isReady}
-          style={{ width: "100%", fontSize: 16 }}
           aria-busy={loading}
         >
           {loading ? (
-            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10 }}>
-              <span
-                style={{
-                  width: 18,
-                  height: 18,
-                  border: "2.5px solid rgba(255,255,255,0.4)",
-                  borderTopColor: "#fff",
-                  borderRadius: "50%",
-                  display: "inline-block",
-                  animation: "spin 0.8s linear infinite",
-                }}
-              />
+            <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <span style={{ width: 16, height: 16, border: "2px solid rgba(255,255,255,0.35)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block", animation: "spin 0.7s linear infinite" }} />
               {s.checkingBtn}
             </span>
           ) : s.checkBtn}

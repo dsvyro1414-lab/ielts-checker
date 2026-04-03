@@ -1,25 +1,66 @@
+import type { ReactElement } from "react";
 import type { TaskMode } from "../types";
 import type { Strings } from "../hooks/useLanguage";
 
 const CRITERIA = [
-  { key: "ta",  label: "Task Achievement",              clayClass: "clay-coral",  shadow: "#C94B3B" },
-  { key: "cc",  label: "Coherence & Cohesion",          clayClass: "clay-purple", shadow: "#4A3FC0" },
-  { key: "lr",  label: "Lexical Resource",              clayClass: "clay-mint",   shadow: "#1E9070" },
-  { key: "gra", label: "Grammatical Range & Accuracy",  clayClass: "clay-yellow", shadow: "#C08010" },
+  { key: "ta",  label: "Task Achievement" },
+  { key: "cc",  label: "Coherence & Cohesion" },
+  { key: "lr",  label: "Lexical Resource" },
+  { key: "gra", label: "Grammatical Range & Accuracy" },
 ];
 
-const ICONS: Record<string, string> = {
-  ta: "🎯",
-  cc: "🔗",
-  lr: "📚",
-  gra: "✏️",
+// SVG icons — one per criterion
+function IconTarget() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+      <circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor" strokeWidth="1.4"/>
+      <circle cx="7.5" cy="7.5" r="3" stroke="currentColor" strokeWidth="1.4"/>
+      <circle cx="7.5" cy="7.5" r="1" fill="currentColor"/>
+    </svg>
+  );
+}
+function IconLink() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+      <path d="M5 7.5h5M8.5 5l2.5 2.5L8.5 10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M6.5 10l-2.5-2.5L6.5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+function IconBook() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+      <path d="M2 3a1 1 0 0 1 1-1h4v11H3a1 1 0 0 1-1-1V3z" stroke="currentColor" strokeWidth="1.4"/>
+      <path d="M7 2h4a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H7V2z" stroke="currentColor" strokeWidth="1.4"/>
+    </svg>
+  );
+}
+function IconPen() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+      <path d="M10.5 2.5l2 2-7 7H3.5v-2l7-7z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M3.5 11.5h8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+    </svg>
+  );
+}
+
+const CRITERION_ICONS: Record<string, ReactElement> = {
+  ta:  <IconTarget />,
+  cc:  <IconLink />,
+  lr:  <IconBook />,
+  gra: <IconPen />,
 };
 
+function bandColor(score: number) {
+  if (score >= 7) return "#4A7C59";
+  if (score >= 5.5) return "#8A6E3E";
+  return "#A04040";
+}
+
 function BandBar({ score }: { score: number }) {
-  const pct = (score / 9) * 100;
   return (
-    <div className="band-bar-track" role="progressbar" aria-valuenow={score} aria-valuemin={0} aria-valuemax={9} aria-label={`Score: ${score} out of 9`}>
-      <div className="band-bar-fill" style={{ width: `${pct}%` }} />
+    <div className="band-bar-track" role="progressbar" aria-valuenow={score} aria-valuemin={0} aria-valuemax={9} aria-label={`Score ${score} out of 9`}>
+      <div className="band-bar-fill" style={{ width: `${(score / 9) * 100}%` }} />
     </div>
   );
 }
@@ -28,39 +69,23 @@ interface Props {
   result: any;
   taskMode: TaskMode;
   loading: boolean;
-  s: Pick<
-    Strings,
-    | "loadingText"
-    | "overallTitle"
-    | "overallSubtitleT1"
-    | "overallSubtitleT2"
-    | "summaryTitle"
-    | "errorsTitle"
-  >;
+  s: Pick<Strings, "loadingText" | "overallTitle" | "overallSubtitleT1" | "overallSubtitleT2" | "summaryTitle" | "errorsTitle">;
 }
 
 export function ResultsPanel({ result, taskMode, loading, s }: Props) {
   if (loading) {
     return (
-      <div
-        className="clay-white"
-        style={{ textAlign: "center", padding: "56px 24px" }}
-        aria-live="polite"
-        aria-busy="true"
-      >
-        <div
-          style={{
-            width: 52,
-            height: 52,
-            border: "4px solid rgba(123,111,255,0.2)",
-            borderTopColor: "#7B6FFF",
-            borderRadius: "50%",
-            margin: "0 auto 20px",
-            animation: "spin 0.8s linear infinite",
-          }}
-          aria-hidden="true"
-        />
-        <p style={{ fontSize: 15, color: "#888", margin: 0, fontWeight: 600, fontFamily: "'Nunito', system-ui, sans-serif" }}>
+      <div className="card" style={{ textAlign: "center", padding: "52px 24px" }} aria-live="polite" aria-busy="true">
+        <div style={{
+          width: 40,
+          height: 40,
+          border: "3px solid #E8E4DE",
+          borderTopColor: "var(--sage)",
+          borderRadius: "50%",
+          margin: "0 auto 16px",
+          animation: "spin 0.7s linear infinite",
+        }} aria-hidden="true" />
+        <p style={{ fontSize: 14, color: "var(--text-secondary)", margin: 0, fontWeight: 500 }}>
           {s.loadingText}
         </p>
       </div>
@@ -70,76 +95,71 @@ export function ResultsPanel({ result, taskMode, loading, s }: Props) {
   if (!result) return null;
 
   return (
-    <div className="result-enter" style={{ display: "flex", flexDirection: "column", gap: 16 }} aria-live="polite">
+    <div className="result-enter" style={{ display: "flex", flexDirection: "column", gap: 12 }} aria-live="polite">
+
       {/* Overall Band Score */}
-      <div
-        className="clay-dark"
-        style={{ padding: "32px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}
-      >
-        <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: 1.5, marginBottom: 8 }}>
-            {s.overallTitle}
+      <div className="card" style={{ padding: "28px 28px 24px" }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 6 }}>
+              {s.overallTitle}
+            </div>
+            <div style={{ fontSize: 14, color: "var(--text-secondary)", lineHeight: 1.55, maxWidth: 320 }}>
+              {taskMode === "task1" ? s.overallSubtitleT1 : s.overallSubtitleT2}
+            </div>
           </div>
-          <div style={{ fontSize: 15, color: "rgba(255,255,255,0.8)", maxWidth: 340, lineHeight: 1.5, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
-            {taskMode === "task1" ? s.overallSubtitleT1 : s.overallSubtitleT2}
+          <div style={{ textAlign: "right", flexShrink: 0 }}>
+            <div style={{
+              fontFamily: "'Nunito', system-ui, sans-serif",
+              fontSize: 56,
+              fontWeight: 900,
+              color: bandColor(result.overall),
+              lineHeight: 1,
+              letterSpacing: -2,
+            }}>
+              {result.overall}
+            </div>
+            <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2, fontWeight: 600 }}>
+              out of 9.0
+            </div>
           </div>
         </div>
-        <div
-          style={{
-            background: "rgba(255,255,255,0.1)",
-            border: "2px solid rgba(255,255,255,0.2)",
-            borderRadius: 20,
-            padding: "14px 28px",
-            textAlign: "center",
-            flexShrink: 0,
-            backdropFilter: "blur(8px)",
-            boxShadow: "inset 0 2px 6px rgba(255,255,255,0.08)",
-          }}
-        >
-          <div
-            style={{
-              fontFamily: "'Nunito', system-ui, sans-serif",
-              fontSize: 60,
-              fontWeight: 900,
-              color: "#fff",
-              lineHeight: 1,
-              background: "linear-gradient(135deg, #FFB52E, #FF6B5B)",
-              WebkitBackgroundClip: "text",
-              WebkitTextFillColor: "transparent",
-            }}
-          >
-            {result.overall}
-          </div>
-          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.5)", marginTop: 4, fontWeight: 600 }}>/ 9.0</div>
+
+        {/* Thin overall band bar */}
+        <div style={{ marginTop: 20, height: 4, borderRadius: 999, background: "#EDE9E3", overflow: "hidden" }}>
+          <div style={{
+            width: `${(result.overall / 9) * 100}%`,
+            height: "100%",
+            borderRadius: 999,
+            background: bandColor(result.overall),
+            transition: "width 0.6s cubic-bezier(.4,0,.2,1)",
+          }} />
         </div>
       </div>
 
       {/* Criteria Grid */}
-      <div className="criteria-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+      <div className="criteria-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         {CRITERIA.map((c) => (
-          <div key={c.key} className={`criterion-card ${c.clayClass}`}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 20 }} aria-hidden="true">{ICONS[c.key]}</span>
-                <span style={{ fontSize: 12, fontWeight: 800, fontFamily: "'Nunito', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: 0.5, opacity: 0.9 }}>
+          <div key={c.key} className="criterion-card">
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 2 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--sage)" }}>
+                {CRITERION_ICONS[c.key]}
+                <span style={{ fontSize: 11, fontWeight: 700, fontFamily: "'Nunito', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: 0.7, color: "var(--text-muted)" }}>
                   {c.label}
                 </span>
               </div>
-              <span
-                style={{
-                  fontFamily: "'Nunito', system-ui, sans-serif",
-                  fontSize: 28,
-                  fontWeight: 900,
-                  color: "#fff",
-                  lineHeight: 1,
-                  textShadow: `2px 2px 0 ${c.shadow}`,
-                }}
-              >
+              <span style={{
+                fontFamily: "'Nunito', system-ui, sans-serif",
+                fontSize: 22,
+                fontWeight: 900,
+                color: bandColor(result[c.key]),
+                letterSpacing: -0.5,
+              }}>
                 {result[c.key]}
               </span>
             </div>
             <BandBar score={result[c.key]} />
-            <p style={{ fontSize: 13, color: "rgba(255,255,255,0.88)", lineHeight: 1.6, margin: "10px 0 0", fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+            <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.65, margin: "10px 0 0" }}>
               {result[c.key + "_comment"]}
             </p>
           </div>
@@ -147,78 +167,59 @@ export function ResultsPanel({ result, taskMode, loading, s }: Props) {
       </div>
 
       {/* Summary */}
-      <div className="clay-white" style={{ padding: "22px 24px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 10,
-              background: "linear-gradient(145deg, #EDE9FF, #DDD8FF)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 16,
-              boxShadow: "2px 2px 0 rgba(123,111,255,0.3)",
-              flexShrink: 0,
-            }}
-            aria-hidden="true"
-          >
-            💡
+      <div className="card" style={{ padding: "20px 22px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <div style={{
+            width: 28,
+            height: 28,
+            borderRadius: 8,
+            background: "var(--sage-light)",
+            border: "1px solid var(--sage-mid)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            color: "var(--sage)",
+            flexShrink: 0,
+          }} aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+              <circle cx="7" cy="7" r="6" stroke="currentColor" strokeWidth="1.4"/>
+              <path d="M7 4.5v3M7 9.5v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+            </svg>
           </div>
-          <span style={{ fontFamily: "'Nunito', system-ui, sans-serif", fontWeight: 800, fontSize: 15, color: "#2A2545" }}>
+          <span style={{ fontFamily: "'Nunito', system-ui, sans-serif", fontWeight: 800, fontSize: 14, color: "var(--text-primary)" }}>
             {s.summaryTitle}
           </span>
         </div>
-        <p style={{ fontSize: 14, lineHeight: 1.75, color: "#444", margin: 0, fontFamily: "'DM Sans', system-ui, sans-serif" }}>
+        <p style={{ fontSize: 14, lineHeight: 1.75, color: "var(--text-secondary)", margin: 0 }}>
           {result.summary}
         </p>
       </div>
 
       {/* Annotated Essay */}
-      <div className="clay-white" style={{ overflow: "hidden", padding: 0 }}>
-        <div
-          style={{
-            padding: "16px 22px",
-            background: "linear-gradient(145deg, #FFF1F0, #FFE8E5)",
-            borderBottom: "1.5px solid rgba(255,107,91,0.15)",
+      <div className="card" style={{ overflow: "hidden", padding: 0 }}>
+        <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 8 }}>
+          <div style={{
+            width: 28,
+            height: 28,
+            borderRadius: 8,
+            background: "#FDF3F2",
+            border: "1px solid var(--error-border)",
             display: "flex",
             alignItems: "center",
-            gap: 10,
-          }}
-        >
-          <div
-            style={{
-              width: 32,
-              height: 32,
-              borderRadius: 10,
-              background: "linear-gradient(145deg, #FF8A7D, #FF6B5B)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: 15,
-              color: "#fff",
-              fontWeight: 700,
-              boxShadow: "2px 2px 0 #C94B3B",
-              flexShrink: 0,
-            }}
-            aria-hidden="true"
-          >
-            ✗
+            justifyContent: "center",
+            color: "var(--error)",
+            flexShrink: 0,
+          }} aria-hidden="true">
+            <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+              <path d="M2.5 2.5l8 8M10.5 2.5l-8 8" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"/>
+            </svg>
           </div>
-          <span style={{ fontFamily: "'Nunito', system-ui, sans-serif", fontWeight: 800, fontSize: 15, color: "#2D2D2D" }}>
+          <span style={{ fontFamily: "'Nunito', system-ui, sans-serif", fontWeight: 800, fontSize: 14, color: "var(--text-primary)" }}>
             {s.errorsTitle}
           </span>
         </div>
         <div
-          style={{
-            padding: "22px 26px",
-            background: "#fff",
-            fontSize: 14,
-            lineHeight: 1.9,
-            color: "#374151",
-            fontFamily: "'DM Sans', system-ui, sans-serif",
-          }}
+          style={{ padding: "20px 24px", background: "#fff", fontSize: 14, lineHeight: 1.9, color: "var(--text-secondary)" }}
           dangerouslySetInnerHTML={{ __html: result.annotated }}
         />
       </div>
