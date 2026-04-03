@@ -159,72 +159,360 @@ In the annotated text, mark ALL errors: grammar, vocabulary, spelling, punctuati
   }, [taskMode, question, essay, image, lang]);
 
   return (
-    <div
-      style={{
-        fontFamily: "'Inter', 'Segoe UI', system-ui, sans-serif",
-        minHeight: "100vh",
-        background: "linear-gradient(160deg, #f8faff 0%, #f1f5ff 100%)",
-        padding: "40px 16px 60px",
-      }}
-    >
+    <div style={{ fontFamily: "'DM Sans', 'Inter', system-ui, sans-serif", minHeight: "100vh", background: "#FFFAF4" }}>
       <style>{`
+        *, *::before, *::after { box-sizing: border-box; }
+        body { margin: 0; }
+
+        /* Clay design tokens */
+        :root {
+          --coral: #FF6B5B;
+          --coral-light: #FF8A7D;
+          --coral-dark: #E05040;
+          --purple: #7B6FFF;
+          --purple-light: #9D94FF;
+          --purple-dark: #5A50E0;
+          --mint: #3EC99A;
+          --mint-light: #65D9B0;
+          --mint-dark: #2BA87E;
+          --yellow: #FFB52E;
+          --yellow-light: #FFC85A;
+          --yellow-dark: #E09A18;
+          --bg: #FFFAF4;
+          --text: #2D2D2D;
+          --text-muted: #6B6B6B;
+          --surface: #FFFFFF;
+          --border: rgba(0,0,0,0.08);
+          --radius-lg: 24px;
+          --radius-md: 16px;
+          --radius-sm: 12px;
+        }
+
+        /* Clay card mixin */
+        .clay-white {
+          background: linear-gradient(145deg, #ffffff, #f5f0ff10);
+          border-radius: var(--radius-lg);
+          box-shadow: 6px 6px 0 rgba(0,0,0,0.10), inset 0 2px 6px rgba(255,255,255,0.8);
+          border: 1.5px solid rgba(0,0,0,0.07);
+        }
+        .clay-coral {
+          background: linear-gradient(145deg, #FF8A7D, #FF6B5B);
+          border-radius: var(--radius-md);
+          box-shadow: 5px 5px 0 #C94B3B, inset 0 2px 6px rgba(255,255,255,0.3);
+        }
+        .clay-purple {
+          background: linear-gradient(145deg, #9D94FF, #7B6FFF);
+          border-radius: var(--radius-md);
+          box-shadow: 5px 5px 0 #4A3FC0, inset 0 2px 6px rgba(255,255,255,0.3);
+        }
+        .clay-mint {
+          background: linear-gradient(145deg, #65D9B0, #3EC99A);
+          border-radius: var(--radius-md);
+          box-shadow: 5px 5px 0 #1E9070, inset 0 2px 6px rgba(255,255,255,0.3);
+        }
+        .clay-yellow {
+          background: linear-gradient(145deg, #FFC85A, #FFB52E);
+          border-radius: var(--radius-md);
+          box-shadow: 5px 5px 0 #C08010, inset 0 2px 6px rgba(255,255,255,0.3);
+        }
+        .clay-dark {
+          background: linear-gradient(145deg, #3A3560, #2A2545);
+          border-radius: var(--radius-lg);
+          box-shadow: 6px 6px 0 rgba(0,0,0,0.25), inset 0 2px 6px rgba(255,255,255,0.08);
+        }
+
+        /* Buttons */
+        .btn-clay {
+          font-family: 'Nunito', system-ui, sans-serif;
+          font-weight: 800;
+          font-size: 16px;
+          border: none;
+          cursor: pointer;
+          padding: 14px 32px;
+          border-radius: 14px;
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
+          letter-spacing: 0.2px;
+        }
+        .btn-clay:hover:not(:disabled) { transform: translateY(-2px); }
+        .btn-clay:active:not(:disabled) { transform: translateY(1px); }
+        .btn-primary-clay {
+          background: linear-gradient(145deg, #9D94FF, #7B6FFF);
+          color: #fff;
+          box-shadow: 4px 4px 0 #4A3FC0, inset 0 2px 4px rgba(255,255,255,0.3);
+        }
+        .btn-primary-clay:hover:not(:disabled) {
+          box-shadow: 6px 6px 0 #4A3FC0, inset 0 2px 4px rgba(255,255,255,0.3);
+        }
+        .btn-primary-clay:disabled {
+          background: linear-gradient(145deg, #d1d5db, #c4c8cf);
+          color: #9ca3af;
+          box-shadow: 4px 4px 0 #a0a5ad;
+          cursor: not-allowed;
+        }
+
+        /* Navbar */
+        .navbar {
+          position: sticky;
+          top: 0;
+          z-index: 100;
+          background: rgba(255,250,244,0.92);
+          backdrop-filter: blur(12px);
+          border-bottom: 1.5px solid rgba(0,0,0,0.07);
+          padding: 0 24px;
+          height: 64px;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+        }
+        .navbar-logo {
+          font-family: 'Nunito', system-ui, sans-serif;
+          font-weight: 900;
+          font-size: 20px;
+          color: var(--text);
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .navbar-logo-dot {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #7B6FFF, #FF6B5B);
+          display: inline-block;
+        }
+
+        /* Hero */
+        .hero {
+          text-align: center;
+          padding: 60px 24px 48px;
+        }
+        .hero-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background: linear-gradient(135deg, #EDE9FF, #FFE4E0);
+          border: 1.5px solid rgba(123,111,255,0.2);
+          border-radius: 999px;
+          padding: 6px 16px;
+          margin-bottom: 20px;
+          font-size: 13px;
+          font-weight: 700;
+          color: #5A50E0;
+          letter-spacing: 0.5px;
+        }
+        .hero h1 {
+          font-family: 'Nunito', system-ui, sans-serif;
+          font-weight: 900;
+          font-size: clamp(32px, 5vw, 52px);
+          line-height: 1.15;
+          margin: 0 0 16px;
+          color: var(--text);
+          letter-spacing: -1px;
+        }
+        .hero h1 span {
+          background: linear-gradient(135deg, #7B6FFF 0%, #FF6B5B 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+        .hero p {
+          font-size: 17px;
+          color: var(--text-muted);
+          max-width: 480px;
+          margin: 0 auto;
+          line-height: 1.6;
+        }
+
+        /* Form inputs */
+        .clay-input {
+          width: 100%;
+          padding: 12px 16px;
+          border-radius: 12px;
+          border: 2px solid rgba(0,0,0,0.08);
+          background: #FFFEF8;
+          font-family: 'DM Sans', system-ui, sans-serif;
+          font-size: 14px;
+          color: var(--text);
+          outline: none;
+          transition: border-color 0.2s, box-shadow 0.2s;
+          resize: vertical;
+          line-height: 1.6;
+          box-shadow: inset 0 2px 4px rgba(0,0,0,0.04);
+        }
+        .clay-input:focus {
+          border-color: #7B6FFF;
+          box-shadow: 0 0 0 4px rgba(123,111,255,0.12), inset 0 2px 4px rgba(0,0,0,0.04);
+        }
+        .clay-input::placeholder { color: #aaa; }
+
+        /* Label */
+        .field-label {
+          display: block;
+          font-family: 'Nunito', system-ui, sans-serif;
+          font-weight: 700;
+          font-size: 12px;
+          text-transform: uppercase;
+          letter-spacing: 0.8px;
+          color: var(--text-muted);
+          margin-bottom: 8px;
+        }
+
+        /* Task toggle */
+        .task-toggle {
+          display: inline-flex;
+          background: #F0ECF8;
+          border-radius: 12px;
+          padding: 4px;
+          margin-bottom: 24px;
+          box-shadow: inset 0 2px 4px rgba(0,0,0,0.06);
+        }
+        .task-tab {
+          font-family: 'Nunito', system-ui, sans-serif;
+          font-weight: 700;
+          font-size: 14px;
+          padding: 8px 20px;
+          border-radius: 9px;
+          border: none;
+          background: transparent;
+          color: #888;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .task-tab.active {
+          background: linear-gradient(145deg, #9D94FF, #7B6FFF);
+          color: #fff;
+          box-shadow: 3px 3px 0 #4A3FC0, inset 0 1px 3px rgba(255,255,255,0.3);
+        }
+        .task-tab:hover:not(.active) { color: #5A50E0; }
+
+        /* Upload zone */
+        .upload-zone {
+          border: 2px dashed rgba(123,111,255,0.3);
+          border-radius: 16px;
+          background: linear-gradient(145deg, #FEFCFF, #F7F4FF);
+          cursor: pointer;
+          transition: all 0.2s ease;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          padding: 36px 20px;
+          color: #9ca3af;
+        }
+        .upload-zone:hover {
+          border-color: #7B6FFF;
+          background: linear-gradient(145deg, #F5F2FF, #EDE9FF);
+          color: #7B6FFF;
+        }
+
+        /* Criterion cards */
+        .criterion-card {
+          border-radius: 18px;
+          padding: 20px;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          color: #fff;
+        }
+        .criterion-card:hover {
+          transform: translateY(-2px);
+        }
+
+        /* Band bar */
+        .band-bar-track {
+          height: 8px;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.3);
+          overflow: hidden;
+          margin: 10px 0 4px;
+        }
+        .band-bar-fill {
+          height: 100%;
+          border-radius: 999px;
+          background: rgba(255,255,255,0.9);
+          transition: width 0.6s cubic-bezier(.4,0,.2,1);
+        }
+
+        /* Blob decorations */
+        .blob-container {
+          position: fixed;
+          inset: 0;
+          pointer-events: none;
+          overflow: hidden;
+          z-index: 0;
+        }
+        .blob {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(80px);
+          opacity: 0.25;
+        }
+
+        /* Gear button */
+        .gear-btn {
+          width: 40px;
+          height: 40px;
+          border-radius: 12px;
+          border: 1.5px solid rgba(0,0,0,0.08);
+          background: #fff;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          color: #6b7280;
+          box-shadow: 2px 2px 0 rgba(0,0,0,0.06);
+        }
+        .gear-btn:hover { color: #7B6FFF; border-color: #7B6FFF; }
+
+        /* Animations */
         @keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(16px) } to { opacity: 1; transform: translateY(0) } }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(20px) } to { opacity: 1; transform: translateY(0) } }
+        @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
         .result-enter { animation: fadeUp 0.4s ease forwards; }
-        .btn-primary:hover:not(:disabled) { background: #4f46e5 !important; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(99,102,241,0.35) !important; }
-        .btn-primary:active:not(:disabled) { transform: translateY(0); }
-        .btn-primary { transition: all 0.2s ease !important; }
-        .criterion-card:hover { border-color: #c7d2fe !important; box-shadow: 0 2px 12px rgba(99,102,241,0.08) !important; }
-        .upload-zone:hover { border-color: #6366f1 !important; background: #f5f3ff !important; }
-        .gear-btn:hover { background: #f3f4f6 !important; color: #6366f1 !important; }
-        .task-tab:hover { color: #6366f1 !important; }
+
+        @media (prefers-reduced-motion: reduce) {
+          .btn-clay, .criterion-card, .result-enter { animation: none; transition: none; }
+        }
+        @media (max-width: 600px) {
+          .hero { padding: 40px 16px 32px; }
+          .hero h1 { font-size: 28px; }
+          .criteria-grid { grid-template-columns: 1fr !important; }
+        }
       `}</style>
 
-      <div style={{ maxWidth: 760, margin: "0 auto" }}>
-        {/* Header */}
-        <div style={{ textAlign: "center", marginBottom: 36, position: "relative" }}>
-          <SettingsModal lang={lang} setLang={setLang} s={s} />
+      {/* Background blobs */}
+      <div className="blob-container" aria-hidden="true">
+        <div className="blob" style={{ width: 500, height: 500, background: "#7B6FFF", top: -100, right: -100 }} />
+        <div className="blob" style={{ width: 400, height: 400, background: "#FF6B5B", bottom: 100, left: -120 }} />
+        <div className="blob" style={{ width: 300, height: 300, background: "#3EC99A", bottom: -80, right: 200 }} />
+      </div>
 
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 10,
-              background: "#fff",
-              border: "1px solid #e0e7ff",
-              borderRadius: 999,
-              padding: "6px 16px",
-              marginBottom: 16,
-              boxShadow: "0 1px 4px rgba(99,102,241,0.1)",
-            }}
-          >
-            <span
-              style={{
-                width: 8,
-                height: 8,
-                borderRadius: "50%",
-                background: "#6366f1",
-                display: "inline-block",
-              }}
-            />
-            <span style={{ fontSize: 12, fontWeight: 600, color: "#6366f1", letterSpacing: 0.5 }}>
-              {s.badge}
-            </span>
-          </div>
-
-          <h1
-            style={{
-              fontSize: 32,
-              fontWeight: 800,
-              margin: "0 0 8px",
-              color: "#0f172a",
-              letterSpacing: -0.5,
-            }}
-          >
-            {s.title}
-          </h1>
-          <p style={{ color: "#64748b", fontSize: 15, margin: 0 }}>{s.subtitle}</p>
+      {/* Navbar */}
+      <nav className="navbar" role="navigation" aria-label="Main navigation">
+        <div className="navbar-logo">
+          <span className="navbar-logo-dot" />
+          IELTS Checker
         </div>
+        <SettingsModal lang={lang} setLang={setLang} s={s} />
+      </nav>
+
+      {/* Main content */}
+      <main style={{ position: "relative", zIndex: 1, maxWidth: 780, margin: "0 auto", padding: "0 16px 80px" }}>
+        {/* Hero */}
+        <section className="hero" aria-label="Hero">
+          <div className="hero-badge">
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#7B6FFF", display: "inline-block" }} />
+            {s.badge}
+          </div>
+          <h1>
+            {s.title.includes("IELTS") ? (
+              <>
+                <span>IELTS</span> Essay Checker
+              </>
+            ) : s.title}
+          </h1>
+          <p>{s.subtitle}</p>
+        </section>
 
         <TaskForm
           taskMode={taskMode}
@@ -244,26 +532,29 @@ In the annotated text, mark ALL errors: grammar, vocabulary, spelling, punctuati
 
         {error && (
           <div
+            role="alert"
             style={{
               marginBottom: 16,
-              padding: "12px 16px",
-              borderRadius: 10,
-              background: "#fef2f2",
-              border: "1px solid #fecaca",
-              color: "#dc2626",
+              padding: "14px 18px",
+              borderRadius: 14,
+              background: "linear-gradient(145deg, #FFF0EE, #FFE8E5)",
+              border: "1.5px solid rgba(255,107,91,0.3)",
+              color: "#C94B3B",
               fontSize: 14,
+              fontWeight: 600,
               display: "flex",
               alignItems: "center",
-              gap: 8,
+              gap: 10,
+              boxShadow: "3px 3px 0 rgba(255,107,91,0.15)",
             }}
           >
-            <span style={{ fontSize: 16 }}>!</span>
+            <span style={{ fontSize: 18, flexShrink: 0 }}>⚠️</span>
             {error}
           </div>
         )}
 
         <ResultsPanel result={result} taskMode={taskMode} loading={loading} s={s} />
-      </div>
+      </main>
     </div>
   );
 }
