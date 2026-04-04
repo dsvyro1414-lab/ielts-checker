@@ -3,43 +3,44 @@ import type { TaskMode } from "../types";
 import type { Strings } from "../hooks/useLanguage";
 
 const CRITERIA = [
-  { key: "ta",  label: "Task Achievement" },
-  { key: "cc",  label: "Coherence & Cohesion" },
-  { key: "lr",  label: "Lexical Resource" },
-  { key: "gra", label: "Grammatical Range & Accuracy" },
+  { key: "ta",  label: "Task Achievement",             color: "#E8736A", darkerShadow: "rgba(180,72,62,0.35)" },
+  { key: "cc",  label: "Coherence & Cohesion",         color: "#8B7EC8", darkerShadow: "rgba(100,88,170,0.35)" },
+  { key: "lr",  label: "Lexical Resource",             color: "#6BAF8A", darkerShadow: "rgba(70,145,100,0.35)" },
+  { key: "gra", label: "Grammatical Range & Accuracy", color: "#D4A843", darkerShadow: "rgba(180,130,40,0.35)" },
 ];
 
-// SVG icons — one per criterion
+// Consistent SVG icon set — 15×15, 1.4px stroke, all white
 function IconTarget() {
   return (
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-      <circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor" strokeWidth="1.4"/>
-      <circle cx="7.5" cy="7.5" r="3" stroke="currentColor" strokeWidth="1.4"/>
-      <circle cx="7.5" cy="7.5" r="1" fill="currentColor"/>
+      <circle cx="7.5" cy="7.5" r="6.5" stroke="white" strokeWidth="1.4"/>
+      <circle cx="7.5" cy="7.5" r="3" stroke="white" strokeWidth="1.4"/>
+      <circle cx="7.5" cy="7.5" r="1" fill="white"/>
     </svg>
   );
 }
 function IconLink() {
   return (
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-      <path d="M5 7.5h5M8.5 5l2.5 2.5L8.5 10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M6.5 10l-2.5-2.5L6.5 5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M5.5 9.5a3.5 3.5 0 0 0 4.95 0l1.5-1.5a3.5 3.5 0 0 0-4.95-4.95l-.88.88" stroke="white" strokeWidth="1.4" strokeLinecap="round"/>
+      <path d="M9.5 5.5a3.5 3.5 0 0 0-4.95 0l-1.5 1.5a3.5 3.5 0 0 0 4.95 4.95l.88-.88" stroke="white" strokeWidth="1.4" strokeLinecap="round"/>
     </svg>
   );
 }
 function IconBook() {
   return (
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-      <path d="M2 3a1 1 0 0 1 1-1h4v11H3a1 1 0 0 1-1-1V3z" stroke="currentColor" strokeWidth="1.4"/>
-      <path d="M7 2h4a1 1 0 0 1 1 1v9a1 1 0 0 1-1 1H7V2z" stroke="currentColor" strokeWidth="1.4"/>
+      <path d="M3 2.5A1.5 1.5 0 0 1 4.5 1H12v13H4.5A1.5 1.5 0 0 1 3 12.5v-10z" stroke="white" strokeWidth="1.4"/>
+      <path d="M3 11h9" stroke="white" strokeWidth="1.4"/>
+      <path d="M6 4.5h3M6 7h3" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
     </svg>
   );
 }
 function IconPen() {
   return (
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
-      <path d="M10.5 2.5l2 2-7 7H3.5v-2l7-7z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-      <path d="M3.5 11.5h8" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+      <path d="M10.5 2.5l2 2-7.5 7.5H3.5v-2l7.5-7.5z" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+      <path d="M3.5 12.5h8" stroke="white" strokeWidth="1.4" strokeLinecap="round"/>
     </svg>
   );
 }
@@ -51,18 +52,26 @@ const CRITERION_ICONS: Record<string, ReactElement> = {
   gra: <IconPen />,
 };
 
-function bandColor(score: number) {
-  if (score >= 7) return "#4A7C59";
-  if (score >= 5.5) return "#8A6E3E";
-  return "#A04040";
-}
-
 function BandBar({ score }: { score: number }) {
   return (
-    <div className="band-bar-track" role="progressbar" aria-valuenow={score} aria-valuemin={0} aria-valuemax={9} aria-label={`Score ${score} out of 9`}>
+    <div
+      className="band-bar-track"
+      role="progressbar"
+      aria-valuenow={score}
+      aria-valuemin={0}
+      aria-valuemax={9}
+      aria-label={`Score ${score} out of 9`}
+    >
       <div className="band-bar-fill" style={{ width: `${(score / 9) * 100}%` }} />
     </div>
   );
+}
+
+// Overall score band color (semantic: green/amber/red)
+function overallColor(score: number) {
+  if (score >= 7) return "#4A7C59";
+  if (score >= 5.5) return "#8A6E3E";
+  return "#A04040";
 }
 
 interface Props {
@@ -76,15 +85,18 @@ export function ResultsPanel({ result, taskMode, loading, s }: Props) {
   if (loading) {
     return (
       <div className="card" style={{ textAlign: "center", padding: "52px 24px" }} aria-live="polite" aria-busy="true">
-        <div style={{
-          width: 40,
-          height: 40,
-          border: "3px solid #E8E4DE",
-          borderTopColor: "var(--sage)",
-          borderRadius: "50%",
-          margin: "0 auto 16px",
-          animation: "spin 0.7s linear infinite",
-        }} aria-hidden="true" />
+        <div
+          style={{
+            width: 40,
+            height: 40,
+            border: "3px solid #E8E4DE",
+            borderTopColor: "var(--sage)",
+            borderRadius: "50%",
+            margin: "0 auto 16px",
+            animation: "spin 0.7s linear infinite",
+          }}
+          aria-hidden="true"
+        />
         <p style={{ fontSize: 14, color: "var(--text-secondary)", margin: 0, fontWeight: 500 }}>
           {s.loadingText}
         </p>
@@ -95,10 +107,13 @@ export function ResultsPanel({ result, taskMode, loading, s }: Props) {
   if (!result) return null;
 
   return (
-    <div className="result-enter" style={{ display: "flex", flexDirection: "column", gap: 12 }} aria-live="polite">
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }} aria-live="polite">
 
-      {/* Overall Band Score */}
-      <div className="card" style={{ padding: "28px 28px 24px" }}>
+      {/* ── Overall Band Score — animates first ── */}
+      <div
+        className="card anim-item"
+        style={{ padding: "28px 28px 24px", animationDelay: "0ms" }}
+      >
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 6 }}>
@@ -113,7 +128,7 @@ export function ResultsPanel({ result, taskMode, loading, s }: Props) {
               fontFamily: "'Nunito', system-ui, sans-serif",
               fontSize: 56,
               fontWeight: 900,
-              color: bandColor(result.overall),
+              color: overallColor(result.overall),
               lineHeight: 1,
               letterSpacing: -2,
             }}>
@@ -124,50 +139,75 @@ export function ResultsPanel({ result, taskMode, loading, s }: Props) {
             </div>
           </div>
         </div>
-
-        {/* Thin overall band bar */}
         <div style={{ marginTop: 20, height: 4, borderRadius: 999, background: "#EDE9E3", overflow: "hidden" }}>
           <div style={{
             width: `${(result.overall / 9) * 100}%`,
             height: "100%",
             borderRadius: 999,
-            background: bandColor(result.overall),
-            transition: "width 0.6s cubic-bezier(.4,0,.2,1)",
+            background: overallColor(result.overall),
+            transition: "width 0.7s cubic-bezier(.4,0,.2,1)",
           }} />
         </div>
       </div>
 
-      {/* Criteria Grid */}
+      {/* ── Criteria Grid — staggered 100ms apart ── */}
       <div className="criteria-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-        {CRITERIA.map((c) => (
-          <div key={c.key} className="criterion-card">
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 2 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, color: "var(--sage)" }}>
+        {CRITERIA.map((c, i) => (
+          <div
+            key={c.key}
+            className="criterion-card anim-item"
+            style={{
+              background: c.color,
+              boxShadow: `0 4px 16px ${c.darkerShadow}`,
+              animationDelay: `${(i + 1) * 100}ms`,
+            }}
+          >
+            {/* Header: icon + label left, score right */}
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, paddingTop: 2 }}>
                 {CRITERION_ICONS[c.key]}
-                <span style={{ fontSize: 11, fontWeight: 700, fontFamily: "'Nunito', system-ui, sans-serif", textTransform: "uppercase", letterSpacing: 0.7, color: "var(--text-muted)" }}>
+                <span style={{
+                  fontSize: 10,
+                  fontWeight: 800,
+                  fontFamily: "'Nunito', system-ui, sans-serif",
+                  textTransform: "uppercase",
+                  letterSpacing: 0.8,
+                  color: "rgba(255,255,255,0.85)",
+                  lineHeight: 1.3,
+                }}>
                   {c.label}
                 </span>
               </div>
               <span style={{
                 fontFamily: "'Nunito', system-ui, sans-serif",
-                fontSize: 22,
+                fontSize: 32,
                 fontWeight: 900,
-                color: bandColor(result[c.key]),
-                letterSpacing: -0.5,
+                color: "#fff",
+                lineHeight: 1,
+                letterSpacing: -1,
+                flexShrink: 0,
               }}>
                 {result[c.key]}
               </span>
             </div>
+
             <BandBar score={result[c.key]} />
-            <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.65, margin: "10px 0 0" }}>
+
+            <p style={{
+              fontSize: 13,
+              color: "rgba(255,255,255,0.92)",
+              lineHeight: 1.65,
+              margin: "10px 0 0",
+              fontFamily: "'DM Sans', system-ui, sans-serif",
+            }}>
               {result[c.key + "_comment"]}
             </p>
           </div>
         ))}
       </div>
 
-      {/* Summary */}
-      <div className="card" style={{ padding: "20px 22px" }}>
+      {/* ── Summary — after criteria ── */}
+      <div className="card anim-item" style={{ padding: "20px 22px", animationDelay: "500ms" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
           <div style={{
             width: 28,
@@ -195,8 +235,8 @@ export function ResultsPanel({ result, taskMode, loading, s }: Props) {
         </p>
       </div>
 
-      {/* Annotated Essay */}
-      <div className="card" style={{ overflow: "hidden", padding: 0 }}>
+      {/* ── Annotated Essay ── */}
+      <div className="card anim-item" style={{ overflow: "hidden", padding: 0, animationDelay: "580ms" }}>
         <div style={{ padding: "14px 20px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 8 }}>
           <div style={{
             width: 28,

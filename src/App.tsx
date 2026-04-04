@@ -352,10 +352,10 @@ In the annotated text, mark ALL errors: grammar, vocabulary, spelling, punctuati
         }
         .btn-primary:hover:not(:disabled) {
           background: var(--sage-dark);
-          box-shadow: 0 2px 8px rgba(92,122,92,0.35);
-          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(92,122,92,0.35);
+          transform: scale(1.02);
         }
-        .btn-primary:active:not(:disabled) { transform: translateY(0); }
+        .btn-primary:active:not(:disabled) { transform: scale(0.99); }
         .btn-primary:disabled {
           background: #D4CFC8;
           color: #A09A94;
@@ -391,28 +391,31 @@ In the annotated text, mark ALL errors: grammar, vocabulary, spelling, punctuati
 
         /* ── Criterion cards ── */
         .criterion-card {
-          background: var(--surface);
-          border: 1px solid var(--border);
           border-radius: var(--radius-md);
           padding: 20px;
-          box-shadow: var(--shadow-sm);
-          transition: box-shadow 0.15s ease;
+          border: none;
+          color: #fff;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+          will-change: transform;
         }
-        .criterion-card:hover { box-shadow: var(--shadow-md); }
+        .criterion-card:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+        }
 
-        /* ── Band bar ── */
+        /* ── Band bar (white on colored cards) ── */
         .band-bar-track {
           height: 5px;
           border-radius: 999px;
-          background: #EDE9E3;
+          background: rgba(255,255,255,0.3);
           overflow: hidden;
           margin: 10px 0 2px;
         }
         .band-bar-fill {
           height: 100%;
           border-radius: 999px;
-          background: var(--sage);
-          transition: width 0.6s cubic-bezier(.4,0,.2,1);
+          background: rgba(255,255,255,0.92);
+          transition: width 0.7s cubic-bezier(.4,0,.2,1);
         }
 
         /* ── Gear button ── */
@@ -443,11 +446,30 @@ In the annotated text, mark ALL errors: grammar, vocabulary, spelling, punctuati
 
         /* ── Animations ── */
         @keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
-        @keyframes fadeUp { from { opacity: 0; transform: translateY(14px) } to { opacity: 1; transform: translateY(0) } }
-        .result-enter { animation: fadeUp 0.35s ease forwards; }
+        @keyframes fadeSlideUp {
+          from { opacity: 0; transform: translateY(18px); }
+          to   { opacity: 1; transform: translateY(0);    }
+        }
+        .anim-item {
+          opacity: 0;
+          animation: fadeSlideUp 0.36s ease-out both;
+        }
+
+        /* ── CSS noise texture on background ── */
+        body::after {
+          content: '';
+          position: fixed;
+          inset: 0;
+          z-index: 0;
+          pointer-events: none;
+          opacity: 0.03;
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
+          background-size: 300px 300px;
+        }
 
         @media (prefers-reduced-motion: reduce) {
-          .btn-primary, .criterion-card, .result-enter { animation: none !important; transition: none !important; }
+          .anim-item { animation: none !important; opacity: 1 !important; }
+          .btn-primary, .criterion-card { transition: none !important; }
         }
         @media (max-width: 600px) {
           .hero { padding: 36px 16px 28px; }

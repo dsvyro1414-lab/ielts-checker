@@ -40,6 +40,15 @@ export function TaskForm({
   const wordCount = essay.trim() ? essay.trim().split(/\s+/).length : 0;
   const wordCountOk = wordCount >= minWords;
 
+  // Three-state word counter: gray (0) → red (<150) → neutral (150–249) → green (250+)
+  const wc = wordCount === 0
+    ? { color: "var(--text-muted)", bg: "#F5F3EF", border: "var(--border)" }
+    : wordCount < 150
+    ? { color: "#C0392B", bg: "#FDF3F2", border: "#EDCDC9" }
+    : wordCount >= 250
+    ? { color: "#4A7C59", bg: "#EEF4EE", border: "#C8DAC9" }
+    : { color: "var(--text-secondary)", bg: "#F5F3EF", border: "var(--border)" };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -62,19 +71,21 @@ export function TaskForm({
           gap: 5,
           padding: "2px 10px",
           borderRadius: 999,
-          border: `1px solid ${wordCountOk ? "#C8DAC9" : wordCount > 0 ? "#EDCDC9" : "var(--border)"}`,
-          background: wordCountOk ? "#EEF4EE" : wordCount > 0 ? "#FDF3F2" : "#F5F3EF",
+          border: `1px solid ${wc.border}`,
+          background: wc.bg,
+          transition: "background 0.2s, border-color 0.2s",
         }}>
           <span style={{
             fontSize: 12,
             fontWeight: 700,
             fontFamily: "'Nunito', system-ui, sans-serif",
-            color: wordCountOk ? "#5A7A5C" : wordCount > 0 ? "#C0392B" : "var(--text-muted)",
+            color: wc.color,
+            transition: "color 0.2s",
           }}>
             {s.words(wordCount)}
           </span>
           {wordCount > 0 && !wordCountOk && (
-            <span style={{ fontSize: 11, color: "#C0392B", fontWeight: 600 }}>
+            <span style={{ fontSize: 11, color: wc.color, fontWeight: 600, opacity: 0.8 }}>
               {s.minWords(minWords)}
             </span>
           )}
