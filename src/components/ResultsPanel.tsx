@@ -1,7 +1,44 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import type { ReactElement } from "react";
 import type { TaskMode } from "../types";
 import type { Strings } from "../hooks/useLanguage";
+
+// ── Word-repetition analysis ─────────────────────────────────────────────────
+
+const STOP_WORDS = new Set([
+  'the','a','an','is','are','was','were','and','but','or','in','on','at','to',
+  'of','for','with','that','this','it','as','by','from',
+]);
+
+function getRepeatedWords(text: string): Map<string, number> {
+  const words = text.toLowerCase().match(/\b[a-z]+\b/g) ?? [];
+  const freq = new Map<string, number>();
+  for (const w of words) {
+    if (w.length < 3 || STOP_WORDS.has(w)) continue;
+    freq.set(w, (freq.get(w) ?? 0) + 1);
+  }
+  freq.forEach((n, w) => { if (n < 3) freq.delete(w); });
+  return freq;
+}
+
+// Injects <mark> spans into text nodes only — never inside HTML tags/attributes
+function injectRepetitionMarks(html: string, repeated: Map<string, number>): string {
+  if (repeated.size === 0) return html;
+  // Split into alternating [textNode, tag, textNode, tag, ...]
+  const parts = html.split(/(<[^>]*>)/);
+  return parts.map((part, i) => {
+    if (i % 2 === 1) return part; // it's an HTML tag — leave untouched
+    let text = part;
+    repeated.forEach((count, word) => {
+      const safe = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      text = text.replace(
+        new RegExp(`\\b(${safe})\\b`, 'gi'),
+        `<mark class="word-rep" title="Used ${count} times — consider varying your vocabulary">$1</mark>`,
+      );
+    });
+    return text;
+  }).join('');
+}
 
 const CRITERIA = [
   { key: "ta",  label: "Task Achievement",             color: "#E8736A", darkerShadow: "rgba(180,72,62,0.35)" },
@@ -79,14 +116,25 @@ interface Props {
   result: any;
   taskMode: TaskMode;
   loading: boolean;
+  essay: string;
   s: Pick<Strings, "loadingText" | "overallTitle" | "overallSubtitleT1" | "overallSubtitleT2" | "summaryTitle" | "errorsTitle">;
   onImprove: () => void;
   improvedEssay: string | null;
   loadingImprove: boolean;
 }
 
-export function ResultsPanel({ result, taskMode, loading, s, onImprove, improvedEssay, loadingImprove }: Props) {
+export function ResultsPanel({ result, taskMode, loading, essay, s, onImprove, improvedEssay, loadingImprove }: Props) {
   const [copied, setCopied] = useState(false);
+
+  const repeatedWords = useMemo(
+    () => (result && essay ? getRepeatedWords(essay) : new Map<string, number>()),
+    [result, essay],
+  );
+
+  const processedAnnotated = useMemo(
+    () => (result?.annotated ? injectRepetitionMarks(result.annotated, repeatedWords) : ''),
+    [result?.annotated, repeatedWords],
+  );
 
   const handleCopy = useCallback(() => {
     if (!improvedEssay) return;
@@ -273,8 +321,43 @@ export function ResultsPanel({ result, taskMode, loading, s, onImprove, improved
         </div>
         <div
           style={{ padding: "20px 24px", background: "#fff", fontSize: 14, lineHeight: 1.9, color: "var(--text-secondary)" }}
-          dangerouslySetInnerHTML={{ __html: result.annotated }}
+          dangerouslySetInnerHTML={{ __html: processedAnnotated }}
         />
+
+        {/* ── Legend ── */}
+        <div style={{
+          padding: "10px 22px 12px",
+          borderTop: "1px solid var(--border)",
+          display: "flex",
+          alignItems: "center",
+          gap: 20,
+          background: "#FAFAF8",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-muted)" }}>
+            <span style={{
+              display: "inline-block",
+              width: 24,
+              height: 3,
+              borderRadius: 2,
+              background: "#ef4444",
+              textDecoration: "underline wavy #ef4444",
+              flexShrink: 0,
+            }} aria-hidden="true" />
+            Grammar &amp; vocabulary errors
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "var(--text-muted)" }}>
+            <span style={{
+              display: "inline-block",
+              width: 24,
+              height: 14,
+              borderRadius: 3,
+              background: "rgba(245,200,66,0.28)",
+              borderBottom: "1.5px solid #D4A800",
+              flexShrink: 0,
+            }} aria-hidden="true" />
+            Repeated words (3+ times)
+          </div>
+        </div>
       </div>
 
       {/* ── Improve My Essay button ── */}

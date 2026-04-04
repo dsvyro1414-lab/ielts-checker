@@ -529,6 +529,59 @@ Output ONLY the improved essay text. No title, no labels, no explanation, no pre
           margin: 16px 0;
         }
 
+        /* ── Word-repetition highlight ── */
+        mark.word-rep {
+          background: rgba(245, 200, 66, 0.22);
+          border-bottom: 1.5px solid #D4A800;
+          border-radius: 2px;
+          color: inherit;
+          cursor: help;
+          position: relative;
+          padding: 0 1px;
+        }
+        /* Tooltip arrow */
+        mark.word-rep::before {
+          content: '';
+          position: absolute;
+          bottom: calc(100% + 3px);
+          left: 50%;
+          transform: translateX(-50%);
+          border: 5px solid transparent;
+          border-top-color: #1A1A1A;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.15s ease;
+          z-index: 60;
+        }
+        /* Tooltip bubble — reads from title attr */
+        mark.word-rep::after {
+          content: attr(title);
+          position: absolute;
+          bottom: calc(100% + 8px);
+          left: 50%;
+          transform: translateX(-50%) translateY(4px);
+          background: #1A1A1A;
+          color: #fff;
+          padding: 5px 11px;
+          border-radius: 7px;
+          font-size: 12px;
+          font-weight: 500;
+          font-family: 'DM Sans', system-ui, sans-serif;
+          white-space: nowrap;
+          z-index: 60;
+          pointer-events: none;
+          opacity: 0;
+          transition: opacity 0.15s ease, transform 0.15s ease;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+        }
+        mark.word-rep:hover::before,
+        mark.word-rep:hover::after {
+          opacity: 1;
+        }
+        mark.word-rep:hover::after {
+          transform: translateX(-50%) translateY(0);
+        }
+
         /* ── Animations ── */
         @keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
         @keyframes fadeSlideUp {
@@ -638,6 +691,7 @@ Output ONLY the improved essay text. No title, no labels, no explanation, no pre
           taskMode={taskMode}
           loading={loading}
           s={s}
+          essay={essay}
           onImprove={improve}
           improvedEssay={improvedEssay}
           loadingImprove={loadingImprove}
