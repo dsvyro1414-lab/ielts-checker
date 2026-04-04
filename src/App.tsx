@@ -140,7 +140,7 @@ In the annotated text, mark ALL errors: grammar, vocabulary, spelling, punctuati
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "claude-sonnet-4-6",
           max_tokens: 4000,
           system: systemPrompt,
           messages: [{ role: "user", content: messageContent }],
@@ -192,7 +192,7 @@ Output ONLY the improved essay text. No title, no labels, no explanation, no pre
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
+          model: "claude-sonnet-4-6",
           max_tokens: 2000,
           messages: [{ role: "user", content: prompt }],
         }),
