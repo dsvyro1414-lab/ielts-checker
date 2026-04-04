@@ -1,3 +1,4 @@
+import { useState, useCallback } from "react";
 import type { ReactElement } from "react";
 import type { TaskMode } from "../types";
 import type { Strings } from "../hooks/useLanguage";
@@ -79,9 +80,21 @@ interface Props {
   taskMode: TaskMode;
   loading: boolean;
   s: Pick<Strings, "loadingText" | "overallTitle" | "overallSubtitleT1" | "overallSubtitleT2" | "summaryTitle" | "errorsTitle">;
+  onImprove: () => void;
+  improvedEssay: string | null;
+  loadingImprove: boolean;
 }
 
-export function ResultsPanel({ result, taskMode, loading, s }: Props) {
+export function ResultsPanel({ result, taskMode, loading, s, onImprove, improvedEssay, loadingImprove }: Props) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(() => {
+    if (!improvedEssay) return;
+    navigator.clipboard.writeText(improvedEssay).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [improvedEssay]);
   if (loading) {
     return (
       <div className="card" style={{ textAlign: "center", padding: "52px 24px" }} aria-live="polite" aria-busy="true">
@@ -263,6 +276,136 @@ export function ResultsPanel({ result, taskMode, loading, s }: Props) {
           dangerouslySetInnerHTML={{ __html: result.annotated }}
         />
       </div>
+
+      {/* ── Improve My Essay button ── */}
+      {!improvedEssay && (
+        <div className="anim-item" style={{ animationDelay: "640ms" }}>
+          <button
+            className="btn-secondary"
+            onClick={onImprove}
+            disabled={loadingImprove}
+            aria-busy={loadingImprove}
+          >
+            {loadingImprove ? (
+              <>
+                <span
+                  style={{
+                    width: 16,
+                    height: 16,
+                    border: "2px solid var(--sage-mid)",
+                    borderTopColor: "var(--sage)",
+                    borderRadius: "50%",
+                    display: "inline-block",
+                    animation: "spin 0.7s linear infinite",
+                    flexShrink: 0,
+                  }}
+                  aria-hidden="true"
+                />
+                Improving...
+              </>
+            ) : (
+              <>
+                <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                  <path d="M7.5 1v2M7.5 12v2M1 7.5h2M12 7.5h2M3.05 3.05l1.42 1.42M10.53 10.53l1.42 1.42M3.05 11.95l1.42-1.42M10.53 4.47l1.42-1.42" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                  <circle cx="7.5" cy="7.5" r="2.5" stroke="currentColor" strokeWidth="1.4"/>
+                </svg>
+                Improve My Essay
+              </>
+            )}
+          </button>
+        </div>
+      )}
+
+      {/* ── Improved Version card ── */}
+      {improvedEssay && (
+        <div
+          className="card anim-item"
+          style={{ overflow: "hidden", padding: 0, animationDelay: "0ms" }}
+        >
+          {/* Card header */}
+          <div style={{
+            padding: "14px 20px",
+            borderBottom: "1px solid var(--border)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            background: "var(--sage-light)",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{
+                width: 28,
+                height: 28,
+                borderRadius: 8,
+                background: "var(--sage)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }} aria-hidden="true">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <path d="M7 1l1.5 3 3.3.5-2.4 2.3.6 3.2L7 8.5 4 10l.6-3.2L2.2 4.5l3.3-.5z" stroke="white" strokeWidth="1.2" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <span style={{ fontFamily: "'Nunito', system-ui, sans-serif", fontWeight: 800, fontSize: 14, color: "var(--sage-dark)" }}>
+                Improved Version
+              </span>
+            </div>
+
+            {/* Copy button */}
+            <button
+              onClick={handleCopy}
+              aria-label={copied ? "Copied to clipboard" : "Copy improved essay"}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                padding: "6px 12px",
+                borderRadius: 8,
+                border: `1px solid ${copied ? "var(--sage-mid)" : "var(--border)"}`,
+                background: copied ? "var(--sage-light)" : "#fff",
+                color: copied ? "var(--sage-dark)" : "var(--text-muted)",
+                fontSize: 12,
+                fontWeight: 700,
+                fontFamily: "'Nunito', system-ui, sans-serif",
+                cursor: "pointer",
+                transition: "all 0.2s ease",
+                minHeight: 32,
+                whiteSpace: "nowrap",
+              }}
+            >
+              {copied ? (
+                <>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                    <rect x="4" y="4" width="7" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.3"/>
+                    <path d="M8 4V2.5A1.5 1.5 0 0 0 6.5 1h-4A1.5 1.5 0 0 0 1 2.5v4A1.5 1.5 0 0 0 2.5 8H4" stroke="currentColor" strokeWidth="1.3"/>
+                  </svg>
+                  Copy
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Essay text */}
+          <div style={{
+            padding: "22px 24px",
+            background: "#fff",
+            fontSize: 14,
+            lineHeight: 1.9,
+            color: "var(--text-primary)",
+            fontFamily: "'DM Sans', system-ui, sans-serif",
+            whiteSpace: "pre-wrap",
+          }}>
+            {improvedEssay}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

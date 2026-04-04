@@ -23,6 +23,8 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [improvedEssay, setImprovedEssay] = useState<string | null>(null);
+  const [loadingImprove, setLoadingImprove] = useState(false);
 
   const handleTaskChange = (mode: TaskMode) => {
     if (mode === taskMode) return;
@@ -55,6 +57,7 @@ export default function App() {
     setError(null);
     setLoading(true);
     setResult(null);
+    setImprovedEssay(null);
 
     const feedbackLang = lang === "ru" ? "Russian" : "English";
 
@@ -157,6 +160,53 @@ In the annotated text, mark ALL errors: grammar, vocabulary, spelling, punctuati
       setLoading(false);
     }
   }, [taskMode, question, essay, image, lang]);
+
+  const improve = useCallback(async () => {
+    if (!result) return;
+    setLoadingImprove(true);
+
+    const taskContext = taskMode === "task2"
+      ? `IELTS Writing Task 2 Question:\n${question}`
+      : `IELTS Writing Task 1 (chart/diagram description)`;
+
+    const prompt = `You are an expert IELTS writing coach. Below is a student's essay with its evaluation scores and feedback.
+
+${taskContext}
+
+Student's Essay:
+${essay}
+
+Evaluation:
+- Overall Band: ${result.overall}/9
+- Task Achievement: ${result.ta}/9 — ${result.ta_comment}
+- Coherence & Cohesion: ${result.cc}/9 — ${result.cc_comment}
+- Lexical Resource: ${result.lr}/9 — ${result.lr_comment}
+- Grammatical Range & Accuracy: ${result.gra}/9 — ${result.gra_comment}
+
+Rewrite the essay to fix ALL the weaknesses identified above. Improve vocabulary range and precision, grammatical accuracy and complexity, coherence and paragraph structure, and task achievement. Preserve the student's original arguments, position, and voice — do not introduce new ideas. Aim for a Band 7+ essay.
+
+Output ONLY the improved essay text. No title, no labels, no explanation, no preamble.`;
+
+    try {
+      const res = await fetch("/api/Check", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "claude-sonnet-4-20250514",
+          max_tokens: 2000,
+          messages: [{ role: "user", content: prompt }],
+        }),
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.message || "API error");
+      const text = data.content.map((b: any) => b.text || "").join("").trim();
+      setImprovedEssay(text);
+    } catch (e: any) {
+      setError(STRINGS[lang].errorGeneric + e.message);
+    } finally {
+      setLoadingImprove(false);
+    }
+  }, [result, taskMode, question, essay, lang]);
 
   return (
     <div style={{ fontFamily: "'DM Sans', 'Inter', system-ui, sans-serif", minHeight: "100vh", background: "#FAF8F4" }}>
@@ -367,6 +417,41 @@ In the annotated text, mark ALL errors: grammar, vocabulary, spelling, punctuati
           outline-offset: 2px;
         }
 
+        /* ── Secondary outlined button ── */
+        .btn-secondary {
+          font-family: 'Nunito', system-ui, sans-serif;
+          font-weight: 700;
+          font-size: 15px;
+          width: 100%;
+          padding: 13px;
+          border-radius: var(--radius-sm);
+          border: 1.5px solid var(--sage-mid);
+          background: transparent;
+          color: var(--sage-dark);
+          cursor: pointer;
+          transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+          letter-spacing: 0.1px;
+          min-height: 48px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+        }
+        .btn-secondary:hover:not(:disabled) {
+          background: var(--sage-light);
+          border-color: var(--sage);
+          transform: scale(1.02);
+        }
+        .btn-secondary:active:not(:disabled) { transform: scale(0.99); }
+        .btn-secondary:disabled {
+          opacity: 0.45;
+          cursor: not-allowed;
+        }
+        .btn-secondary:focus-visible {
+          outline: 3px solid rgba(124,154,126,0.5);
+          outline-offset: 2px;
+        }
+
         /* ── Upload zone ── */
         .upload-zone {
           border: 1.5px dashed var(--border);
@@ -548,7 +633,15 @@ In the annotated text, mark ALL errors: grammar, vocabulary, spelling, punctuati
           </div>
         )}
 
-        <ResultsPanel result={result} taskMode={taskMode} loading={loading} s={s} />
+        <ResultsPanel
+          result={result}
+          taskMode={taskMode}
+          loading={loading}
+          s={s}
+          onImprove={improve}
+          improvedEssay={improvedEssay}
+          loadingImprove={loadingImprove}
+        />
       </main>
     </div>
   );
