@@ -10,9 +10,9 @@ interface Props {
 
 function GearIcon() {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <circle cx="12" cy="12" r="3" />
-      <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+      <path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3h0a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8v0a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z" />
     </svg>
   );
 }
@@ -32,10 +32,25 @@ export function SettingsModal({ lang, setLang, s }: Props) {
 
   return (
     <div ref={ref} style={{ position: "relative" }}>
+      <style>{`
+        .icon-btn {
+          width: 34px; height: 34px;
+          border-radius: 10px;
+          display: grid;
+          place-items: center;
+          color: var(--text-muted);
+          border: 1px solid var(--border);
+          background: var(--bg-elev);
+          transition: 0.18s;
+          cursor: pointer;
+        }
+        .icon-btn:hover { color: var(--text); border-color: var(--border-strong); }
+        .icon-btn[aria-expanded="true"] { color: var(--text); border-color: var(--border-strong); background: var(--accent-soft); }
+      `}</style>
       <button
-        className="gear-btn"
+        className="icon-btn"
         onClick={() => setOpen((v) => !v)}
-        aria-label="Settings"
+        aria-label={s.settingsTitle}
         aria-expanded={open}
         aria-haspopup="dialog"
       >
@@ -49,48 +64,56 @@ export function SettingsModal({ lang, setLang, s }: Props) {
           style={{
             position: "absolute",
             right: 0,
-            top: "calc(100% + 8px)",
-            background: "#fff",
+            top: "calc(100% + 10px)",
+            background: "var(--bg-elev)",
             border: "1px solid var(--border)",
             borderRadius: 14,
             padding: "16px 18px",
-            boxShadow: "0 8px 24px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.04)",
-            minWidth: 200,
+            boxShadow: "0 12px 32px -8px rgba(10,10,11,0.18), 0 2px 6px rgba(10,10,11,0.06)",
+            minWidth: 220,
             zIndex: 200,
           }}
         >
-          <div style={{
-            fontFamily: "'Nunito', system-ui, sans-serif",
-            fontWeight: 800,
-            fontSize: 13,
-            color: "var(--text-primary)",
-            marginBottom: 12,
-            paddingBottom: 12,
-            borderBottom: "1px solid var(--border)",
-          }}>
+          <div
+            style={{
+              fontFamily: "var(--font-label)",
+              fontWeight: 500,
+              fontSize: 10.5,
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              color: "var(--text-muted)",
+              marginBottom: 14,
+              paddingBottom: 12,
+              borderBottom: "1px solid var(--border)",
+            }}
+          >
             {s.settingsTitle}
           </div>
 
-          <div style={{
-            fontSize: 10,
-            fontWeight: 700,
-            color: "var(--text-muted)",
-            textTransform: "uppercase",
-            letterSpacing: 0.9,
-            marginBottom: 8,
-            fontFamily: "'Nunito', system-ui, sans-serif",
-          }}>
+          <div
+            style={{
+              fontFamily: "var(--font-label)",
+              fontSize: 10.5,
+              fontWeight: 500,
+              color: "var(--text-muted)",
+              textTransform: "uppercase",
+              letterSpacing: "0.18em",
+              marginBottom: 10,
+            }}
+          >
             {s.languageLabel}
           </div>
 
-          <div style={{
-            display: "flex",
-            gap: 4,
-            background: "#F2EFEA",
-            borderRadius: 9,
-            padding: 3,
-            border: "1px solid var(--border)",
-          }}>
+          <div
+            style={{
+              display: "flex",
+              gap: 2,
+              background: "var(--bg)",
+              borderRadius: 10,
+              padding: 4,
+              border: "1px solid var(--border)",
+            }}
+          >
             {(["en", "ru"] as Lang[]).map((l) => (
               <button
                 key={l}
@@ -98,18 +121,17 @@ export function SettingsModal({ lang, setLang, s }: Props) {
                 aria-pressed={lang === l}
                 style={{
                   flex: 1,
-                  padding: "7px 10px",
-                  borderRadius: 7,
+                  padding: "8px 12px",
+                  borderRadius: 8,
                   border: "none",
                   fontSize: 13,
-                  fontWeight: 700,
+                  fontWeight: 500,
                   cursor: "pointer",
-                  fontFamily: "'Nunito', system-ui, sans-serif",
-                  background: lang === l ? "#fff" : "transparent",
-                  color: lang === l ? "var(--text-primary)" : "var(--text-muted)",
-                  boxShadow: lang === l ? "var(--shadow-sm)" : "none",
-                  transition: "all 0.15s ease",
-                  minHeight: 36,
+                  fontFamily: "var(--font-sans)",
+                  background: lang === l ? "var(--bg-elev-2)" : "transparent",
+                  color: lang === l ? "var(--text)" : "var(--text-muted)",
+                  boxShadow: lang === l ? "0 1px 0 var(--border-strong), 0 2px 8px -2px rgba(0,0,0,0.08)" : "none",
+                  transition: "all 0.16s ease",
                 }}
               >
                 {l === "en" ? s.langEn : s.langRu}

@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import type { TaskMode } from "./types";
 import { useLanguage, STRINGS } from "./hooks/useLanguage";
 import { TaskForm } from "./components/TaskForm";
@@ -13,6 +13,58 @@ const fileToBase64 = (file: File): Promise<string> =>
     reader.onerror = reject;
   });
 
+const LOADING_STAGES = [
+  { stage: "Reading your essay", step: "Tokenising and counting" },
+  { stage: "Evaluating task response", step: "Comparing against the band descriptors" },
+  { stage: "Checking cohesion & lexis", step: "Mapping discourse markers and collocations" },
+  { stage: "Auditing grammar", step: "Scanning for article, tense and preposition errors" },
+  { stage: "Assembling your report", step: "Producing band scores and feedback" },
+];
+
+function LoadingOverlay({ progress, stageIdx }: { progress: number; stageIdx: number }) {
+  const r = 38;
+  const c = 2 * Math.PI * r;
+  const off = c - (progress / 100) * c;
+  const cur = LOADING_STAGES[Math.min(stageIdx, LOADING_STAGES.length - 1)];
+  const words = cur.stage.split(" ");
+  const head = words.slice(0, -1).join(" ");
+  const tail = words.slice(-1).join(" ");
+
+  return (
+    <div className="loading">
+      <div className="loading-inner">
+        <div className="loading-orb">
+          <svg viewBox="0 0 88 88">
+            <circle cx="44" cy="44" r={r} stroke="var(--border)" strokeWidth="2" fill="none" />
+            <circle
+              cx="44"
+              cy="44"
+              r={r}
+              stroke="var(--accent)"
+              strokeWidth="2"
+              fill="none"
+              strokeLinecap="round"
+              strokeDasharray={c}
+              strokeDashoffset={off}
+              style={{ transition: "stroke-dashoffset 0.4s ease" }}
+            />
+          </svg>
+          <div className="loading-orb-num">{Math.round(progress)}%</div>
+        </div>
+        <h3 className="loading-stage">
+          {head} <em>{tail}</em>
+        </h3>
+        <div className="loading-step">{cur.step}</div>
+        <div className="loading-steps">
+          {LOADING_STAGES.map((_, i) => (
+            <span key={i} data-active={i === stageIdx} data-done={i < stageIdx} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const { lang, setLang, s } = useLanguage();
   const [taskMode, setTaskMode] = useState<TaskMode>("task2");
@@ -25,6 +77,14 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [improvedEssay, setImprovedEssay] = useState<string | null>(null);
   const [loadingImprove, setLoadingImprove] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [stageIdx, setStageIdx] = useState(0);
+
+  // Apply theme attributes for design tokens
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", "light");
+    document.documentElement.setAttribute("data-accent", "mono");
+  }, []);
 
   const handleTaskChange = (mode: TaskMode) => {
     if (mode === taskMode) return;
@@ -58,6 +118,23 @@ export default function App() {
     setLoading(true);
     setResult(null);
     setImprovedEssay(null);
+    setProgress(0);
+    setStageIdx(0);
+
+    // Animate the loading stages while the API request is in flight.
+    const stageDur = 900;
+    const totalT = stageDur * LOADING_STAGES.length;
+    const startT = performance.now();
+    let raf = 0;
+    const tick = () => {
+      const elapsed = performance.now() - startT;
+      const p = Math.min(95, (elapsed / totalT) * 95);
+      setProgress(p);
+      const idx = Math.min(LOADING_STAGES.length - 1, Math.floor(elapsed / stageDur));
+      setStageIdx(idx);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
 
     const feedbackLang = lang === "ru" ? "Russian" : "English";
 
@@ -152,12 +229,15 @@ In the annotated text, mark ALL errors: grammar, vocabulary, spelling, punctuati
       const raw = data.content.map((b: any) => b.text || "").join("");
       const clean = raw.replace(/```json|```/g, "").trim();
       const parsed = JSON.parse(clean);
-      console.log("API response parsed:", parsed);
       setResult(parsed);
+      setProgress(100);
+      setStageIdx(LOADING_STAGES.length - 1);
     } catch (e: any) {
       setError(STRINGS[lang].errorGeneric + e.message);
     } finally {
-      setLoading(false);
+      cancelAnimationFrame(raf);
+      // small fade after 100% so users see completion
+      setTimeout(() => setLoading(false), 300);
     }
   }, [taskMode, question, essay, image, lang]);
 
@@ -208,441 +288,393 @@ Output ONLY the improved essay text. No title, no labels, no explanation, no pre
     }
   }, [result, taskMode, question, essay, lang]);
 
+  // ⌘+Enter shortcut
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+        e.preventDefault();
+        if (isReady && !loading) check();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [check, isReady, loading]);
+
+  const heroTitle = lang === "ru" ? (
+    <>Честный балл <em>за минуту.</em></>
+  ) : (
+    <>An honest band, in <em>under a minute.</em></>
+  );
+  const heroSub = lang === "ru"
+    ? "Эссе оценивается по официальным критериям IELTS Writing — с разбором ошибок и понятным путём к следующему баллу."
+    : "Your essay graded against the official IELTS Writing descriptors — with line-level feedback and a clear path to the next band.";
+  const eyebrow = lang === "ru" ? "AI IELTS ЧЕКЕР" : "AI IELTS CHECKER";
+  const modelsOnline = lang === "ru" ? "Модели онлайн" : "Models online";
+  const footerLeft = lang === "ru"
+    ? "IELTS Checker · оценки — это ориентир, не официальный балл"
+    : "IELTS Checker · evaluations are guidance, not official scores";
+  const footerRight = "v 2.0";
+
   return (
-    <div style={{ fontFamily: "'DM Sans', 'Inter', system-ui, sans-serif", minHeight: "100vh", background: "#FAF8F4" }}>
+    <div className="app">
       <style>{`
-        *, *::before, *::after { box-sizing: border-box; }
-        body { margin: 0; }
-
-        /* ── Design tokens ── */
         :root {
-          --sage: #7C9A7E;
-          --sage-dark: #5A7A5C;
-          --sage-light: #EEF4EE;
-          --sage-mid: #C8DAC9;
-          --bg: #FAF8F4;
-          --surface: #FFFFFF;
-          --border: #E8E4DE;
-          --border-focus: #7C9A7E;
-          --text-primary: #1A1A1A;
-          --text-secondary: #6B6560;
-          --text-muted: #9B9590;
-          --error: #C0392B;
-          --error-bg: #FDF3F2;
-          --error-border: #EDCDC9;
-          --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-          --shadow-md: 0 4px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04);
-          --radius-lg: 16px;
-          --radius-md: 12px;
+          --bg: #fafafa;
+          --bg-elev: #ffffff;
+          --bg-elev-2: #ffffff;
+          --border: #e8e8eb;
+          --border-strong: #d4d4d8;
+          --text: #0a0a0b;
+          --text-muted: #6b6f76;
+          --text-dim: #9a9ea6;
+          --accent: #1a1814;
+          --accent-soft: rgba(26, 24, 20, 0.06);
+          --accent-text: #1a1814;
+
+          --c-task: oklch(0.58 0.10 25);
+          --c-task-soft: oklch(0.95 0.02 25);
+          --c-cohesion: oklch(0.55 0.09 290);
+          --c-cohesion-soft: oklch(0.95 0.02 290);
+          --c-lexical: oklch(0.55 0.08 160);
+          --c-lexical-soft: oklch(0.96 0.02 160);
+          --c-grammar: oklch(0.60 0.10 75);
+          --c-grammar-soft: oklch(0.96 0.03 75);
+
+          --font-display: "Instrument Serif", Georgia, serif;
+          --font-sans: "Geist", "Inter Tight", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+          --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+          --font-label: "Geist", "Inter Tight", -apple-system, system-ui, sans-serif;
+
           --radius-sm: 8px;
+          --radius: 14px;
+          --radius-lg: 20px;
         }
 
-        /* ── Card ── */
-        .card {
-          background: var(--surface);
-          border: 1px solid var(--border);
-          border-radius: var(--radius-lg);
-          box-shadow: var(--shadow-sm);
+        * { box-sizing: border-box; }
+        html, body {
+          margin: 0;
+          padding: 0;
+          background: var(--bg);
+          color: var(--text);
+          font-family: var(--font-sans);
+          font-size: 15px;
+          line-height: 1.55;
+          -webkit-font-smoothing: antialiased;
+          text-rendering: optimizeLegibility;
+          font-feature-settings: "ss01", "cv01", "cv11";
+        }
+        button { font-family: inherit; color: inherit; border: none; background: none; cursor: pointer; }
+        textarea, input { font-family: inherit; color: inherit; }
+        ::selection { background: var(--accent-soft); color: var(--accent-text); }
+
+        .app {
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          background: var(--bg);
+        }
+        .app::before {
+          content: "";
+          position: fixed;
+          inset: 0;
+          pointer-events: none;
+          background:
+            radial-gradient(ellipse 80% 60% at 50% -10%, var(--accent-soft), transparent 60%),
+            radial-gradient(ellipse 60% 50% at 100% 100%, var(--accent-soft), transparent 70%);
+          opacity: 0.4;
+          z-index: 0;
+        }
+        .shell {
+          position: relative;
+          z-index: 1;
+          max-width: 980px;
+          margin: 0 auto;
+          padding: 0 32px 80px;
+          width: 100%;
         }
 
-        /* ── Navbar ── */
-        .navbar {
+        .header {
           position: sticky;
           top: 0;
-          z-index: 100;
-          background: rgba(250,248,244,0.94);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
+          z-index: 50;
+          backdrop-filter: blur(16px) saturate(140%);
+          -webkit-backdrop-filter: blur(16px) saturate(140%);
+          background: color-mix(in oklab, var(--bg) 75%, transparent);
           border-bottom: 1px solid var(--border);
-          height: 60px;
+        }
+        .header-inner {
+          max-width: 980px;
+          margin: 0 auto;
+          padding: 14px 32px;
           display: flex;
           align-items: center;
-          padding: 0 24px;
           justify-content: space-between;
+          gap: 16px;
         }
-        .navbar-logo {
-          font-family: 'Nunito', system-ui, sans-serif;
-          font-weight: 800;
-          font-size: 17px;
-          color: var(--text-primary);
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          letter-spacing: -0.3px;
-        }
-        .logo-mark {
-          width: 28px;
-          height: 28px;
+        .brand { display: flex; align-items: center; gap: 12px; }
+        .brand-mark {
+          width: 30px; height: 30px;
           border-radius: 8px;
-          background: var(--sage);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          flex-shrink: 0;
+          background: var(--accent);
+          display: grid; place-items: center;
+          box-shadow: inset 0 0 0 1px rgba(255,255,255,0.06);
         }
-
-        /* ── Hero ── */
-        .hero {
-          text-align: center;
-          padding: 56px 24px 40px;
+        .brand-mark svg { width: 16px; height: 16px; color: #fff; }
+        .brand-name {
+          font-family: var(--font-display);
+          font-size: 21px;
+          letter-spacing: -0.01em;
+          font-weight: 400;
+          line-height: 1;
+          color: var(--text);
         }
-        .hero-badge {
+        .brand-name em { font-style: italic; color: var(--accent-text); }
+        .header-meta { display: flex; align-items: center; gap: 8px; }
+        .pill-mini {
+          font-family: var(--font-label);
+          font-weight: 500;
+          font-size: 10.5px;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          color: var(--text-muted);
+          padding: 5px 10px;
+          border: 1px solid var(--border);
+          border-radius: 999px;
           display: inline-flex;
           align-items: center;
           gap: 6px;
-          background: var(--sage-light);
-          border: 1px solid var(--sage-mid);
-          border-radius: 999px;
-          padding: 5px 14px;
-          margin-bottom: 20px;
-          font-size: 11px;
-          font-weight: 700;
-          color: var(--sage-dark);
-          letter-spacing: 0.8px;
-          text-transform: uppercase;
+          background: var(--bg-elev);
         }
-        .hero h1 {
-          font-family: 'Nunito', system-ui, sans-serif;
-          font-weight: 900;
-          font-size: clamp(30px, 5vw, 48px);
-          line-height: 1.15;
-          margin: 0 0 14px;
-          color: var(--text-primary);
-          letter-spacing: -1px;
-        }
-        .hero h1 em {
-          font-style: normal;
-          color: var(--sage);
-        }
-        .hero p {
-          font-size: 16px;
-          color: var(--text-secondary);
-          max-width: 420px;
-          margin: 0 auto;
-          line-height: 1.65;
+        .pill-mini .dot {
+          width: 5px; height: 5px;
+          border-radius: 50%;
+          background: oklch(0.65 0.18 145);
+          box-shadow: 0 0 0 3px oklch(0.65 0.18 145 / 0.18);
         }
 
-        /* ── Form inputs ── */
-        .field-label {
-          display: block;
-          font-family: 'Nunito', system-ui, sans-serif;
-          font-weight: 700;
-          font-size: 11px;
-          text-transform: uppercase;
-          letter-spacing: 0.9px;
-          color: var(--text-muted);
-          margin-bottom: 7px;
+        .hero {
+          padding: 80px 0 40px;
+          text-align: center;
         }
-        .field-input {
-          width: 100%;
-          padding: 11px 14px;
-          border-radius: var(--radius-sm);
-          border: 1px solid var(--border);
-          background: #FDFCFA;
-          font-family: 'DM Sans', system-ui, sans-serif;
-          font-size: 14px;
-          line-height: 1.6;
-          color: var(--text-primary);
-          outline: none;
-          resize: vertical;
-          transition: border-color 0.15s ease, box-shadow 0.15s ease;
-        }
-        .field-input:focus {
-          border-color: var(--border-focus);
-          box-shadow: 0 0 0 3px rgba(124,154,126,0.15);
-          background: #fff;
-        }
-        .field-input::placeholder { color: var(--text-muted); }
-
-        /* ── Task toggle ── */
-        .task-toggle {
+        .hero-eyebrow {
           display: inline-flex;
-          background: #F2EFEA;
-          border-radius: 10px;
-          padding: 3px;
-          margin-bottom: 24px;
-          border: 1px solid var(--border);
-        }
-        .task-tab {
-          font-family: 'Nunito', system-ui, sans-serif;
-          font-weight: 700;
-          font-size: 13px;
-          padding: 7px 20px;
-          border-radius: 8px;
-          border: none;
-          background: transparent;
-          color: var(--text-muted);
-          cursor: pointer;
-          transition: all 0.15s ease;
-          min-height: 36px;
-        }
-        .task-tab.active {
-          background: var(--surface);
-          color: var(--text-primary);
-          box-shadow: var(--shadow-sm);
-        }
-        .task-tab:hover:not(.active) { color: var(--text-secondary); }
-
-        /* ── Primary button ── */
-        .btn-primary {
-          font-family: 'Nunito', system-ui, sans-serif;
-          font-weight: 800;
-          font-size: 15px;
-          width: 100%;
-          padding: 13px;
-          border-radius: var(--radius-sm);
-          border: none;
-          background: var(--sage);
-          color: #fff;
-          cursor: pointer;
-          transition: background 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
-          letter-spacing: 0.1px;
-          box-shadow: 0 1px 3px rgba(92,122,92,0.3);
-          min-height: 48px;
-        }
-        .btn-primary:hover:not(:disabled) {
-          background: var(--sage-dark);
-          box-shadow: 0 4px 12px rgba(92,122,92,0.35);
-          transform: scale(1.02);
-        }
-        .btn-primary:active:not(:disabled) { transform: scale(0.99); }
-        .btn-primary:disabled {
-          background: #D4CFC8;
-          color: #A09A94;
-          cursor: not-allowed;
-          box-shadow: none;
-        }
-        .btn-primary:focus-visible {
-          outline: 3px solid rgba(124,154,126,0.5);
-          outline-offset: 2px;
-        }
-
-        /* ── Secondary outlined button ── */
-        .btn-secondary {
-          font-family: 'Nunito', system-ui, sans-serif;
-          font-weight: 700;
-          font-size: 15px;
-          width: 100%;
-          padding: 13px;
-          border-radius: var(--radius-sm);
-          border: 1.5px solid var(--sage-mid);
-          background: transparent;
-          color: var(--sage-dark);
-          cursor: pointer;
-          transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
-          letter-spacing: 0.1px;
-          min-height: 48px;
-          display: flex;
           align-items: center;
-          justify-content: center;
           gap: 8px;
-        }
-        .btn-secondary:hover:not(:disabled) {
-          background: var(--sage-light);
-          border-color: var(--sage);
-          transform: scale(1.02);
-        }
-        .btn-secondary:active:not(:disabled) { transform: scale(0.99); }
-        .btn-secondary:disabled {
-          opacity: 0.45;
-          cursor: not-allowed;
-        }
-        .btn-secondary:focus-visible {
-          outline: 3px solid rgba(124,154,126,0.5);
-          outline-offset: 2px;
-        }
-
-        /* ── Upload zone ── */
-        .upload-zone {
-          border: 1.5px dashed var(--border);
-          border-radius: var(--radius-md);
-          background: #FDFCFA;
-          cursor: pointer;
-          transition: border-color 0.15s, background 0.15s;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          gap: 10px;
-          padding: 36px 20px;
-          color: var(--text-muted);
-          min-height: 44px;
-        }
-        .upload-zone:hover {
-          border-color: var(--sage);
-          background: var(--sage-light);
-          color: var(--sage-dark);
-        }
-
-        /* ── Criterion cards ── */
-        .criterion-card {
-          border-radius: var(--radius-md);
-          padding: 20px;
-          border: none;
-          color: #fff;
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
-          will-change: transform;
-        }
-        .criterion-card:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-        }
-
-        /* ── Band bar (white on colored cards) ── */
-        .band-bar-track {
-          height: 5px;
-          border-radius: 999px;
-          background: rgba(255,255,255,0.3);
-          overflow: hidden;
-          margin: 10px 0 2px;
-        }
-        .band-bar-fill {
-          height: 100%;
-          border-radius: 999px;
-          background: rgba(255,255,255,0.92);
-          transition: width 0.7s cubic-bezier(.4,0,.2,1);
-        }
-
-        /* ── Gear button ── */
-        .gear-btn {
-          width: 36px;
-          height: 36px;
-          border-radius: var(--radius-sm);
-          border: 1px solid var(--border);
-          background: var(--surface);
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          transition: border-color 0.15s, color 0.15s;
-          color: var(--text-muted);
-          box-shadow: var(--shadow-sm);
-          min-width: 36px;
-        }
-        .gear-btn:hover { color: var(--sage); border-color: var(--sage-mid); }
-        .gear-btn:focus-visible { outline: 3px solid rgba(124,154,126,0.4); outline-offset: 2px; }
-
-        /* ── Divider ── */
-        .divider {
-          height: 1px;
-          background: var(--border);
-          margin: 16px 0;
-        }
-
-        /* ── Word-repetition highlight ── */
-        mark.word-rep {
-          background: rgba(245, 200, 66, 0.22);
-          border-bottom: 1.5px solid #D4A800;
-          border-radius: 2px;
-          color: inherit;
-          cursor: help;
-          position: relative;
-          padding: 0 1px;
-        }
-        /* Tooltip arrow */
-        mark.word-rep::before {
-          content: '';
-          position: absolute;
-          bottom: calc(100% + 3px);
-          left: 50%;
-          transform: translateX(-50%);
-          border: 5px solid transparent;
-          border-top-color: #1A1A1A;
-          opacity: 0;
-          pointer-events: none;
-          transition: opacity 0.15s ease;
-          z-index: 60;
-        }
-        /* Tooltip bubble — reads from title attr */
-        mark.word-rep::after {
-          content: attr(title);
-          position: absolute;
-          bottom: calc(100% + 8px);
-          left: 50%;
-          transform: translateX(-50%) translateY(4px);
-          background: #1A1A1A;
-          color: #fff;
-          padding: 5px 11px;
-          border-radius: 7px;
-          font-size: 12px;
+          font-family: var(--font-label);
           font-weight: 500;
-          font-family: 'DM Sans', system-ui, sans-serif;
-          white-space: nowrap;
-          z-index: 60;
-          pointer-events: none;
-          opacity: 0;
-          transition: opacity 0.15s ease, transform 0.15s ease;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+          font-size: 10.5px;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: var(--text-muted);
+          margin-bottom: 28px;
         }
-        mark.word-rep:hover::before,
-        mark.word-rep:hover::after {
-          opacity: 1;
+        .hero-eyebrow::before {
+          content: "";
+          width: 5px; height: 5px;
+          border-radius: 50%;
+          background: var(--accent);
+          box-shadow: 0 0 0 3px var(--accent-soft);
         }
-        mark.word-rep:hover::after {
-          transform: translateX(-50%) translateY(0);
+        .hero-title {
+          font-family: var(--font-display);
+          font-weight: 400;
+          font-size: clamp(48px, 7vw, 84px);
+          line-height: 0.95;
+          letter-spacing: -0.025em;
+          margin: 0 0 22px;
+          color: var(--text);
+        }
+        .hero-title em { font-style: italic; color: var(--accent-text); font-weight: 400; }
+        .hero-sub {
+          color: var(--text-muted);
+          font-size: 16px;
+          max-width: 480px;
+          margin: 0 auto;
+          line-height: 1.5;
         }
 
-        /* ── Animations ── */
-        @keyframes spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
+        .card {
+          background: var(--bg-elev);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-lg);
+          position: relative;
+        }
+
+        .footer {
+          margin-top: 60px;
+          padding-top: 28px;
+          border-top: 1px solid var(--border);
+          font-family: var(--font-label);
+          font-weight: 500;
+          font-size: 11px;
+          color: var(--text-dim);
+          letter-spacing: 0.14em;
+          text-transform: uppercase;
+          display: flex;
+          justify-content: space-between;
+          gap: 16px;
+          flex-wrap: wrap;
+        }
+
+        .sec-head {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+          padding: 0 4px;
+          margin: 22px 0 -4px;
+        }
+        .sec-head h2 {
+          font-family: var(--font-display);
+          font-size: 18px;
+          font-weight: 400;
+          letter-spacing: -0.01em;
+          margin: 0;
+          color: var(--text);
+        }
+        .sec-head .meta {
+          font-family: var(--font-label);
+          font-weight: 500;
+          font-size: 10.5px;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: var(--text-dim);
+        }
+
+        /* Loading overlay */
+        .loading {
+          position: fixed;
+          inset: 0;
+          background: color-mix(in oklab, var(--bg) 70%, transparent);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          z-index: 100;
+          display: grid;
+          place-items: center;
+          animation: fadeIn 0.25s ease;
+        }
+        .loading-inner {
+          width: min(420px, 90vw);
+          padding: 36px 40px;
+          background: var(--bg-elev);
+          border: 1px solid var(--border);
+          border-radius: var(--radius-lg);
+          text-align: center;
+          position: relative;
+          overflow: hidden;
+        }
+        .loading-inner::before {
+          content: "";
+          position: absolute;
+          inset: -1px;
+          border-radius: inherit;
+          padding: 1px;
+          background: linear-gradient(120deg, transparent 35%, var(--accent) 50%, transparent 65%);
+          background-size: 250% 100%;
+          -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+          -webkit-mask-composite: xor;
+                  mask-composite: exclude;
+          animation: shimmer 2.2s linear infinite;
+          pointer-events: none;
+        }
+        @keyframes shimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -100% 0; }
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .loading-orb {
+          width: 88px; height: 88px;
+          margin: 0 auto 20px;
+          position: relative;
+        }
+        .loading-orb svg {
+          width: 100%; height: 100%;
+          transform: rotate(-90deg);
+        }
+        .loading-orb-num {
+          position: absolute; inset: 0;
+          display: grid; place-items: center;
+          font-family: var(--font-mono);
+          font-size: 13px;
+          color: var(--text-muted);
+          letter-spacing: 0.04em;
+        }
+        .loading-stage {
+          font-family: var(--font-display);
+          font-size: 22px;
+          letter-spacing: -0.01em;
+          margin: 0 0 6px;
+          font-weight: 400;
+          color: var(--text);
+        }
+        .loading-stage em { font-style: italic; color: var(--accent-text); }
+        .loading-step {
+          font-family: var(--font-label);
+          font-weight: 500;
+          font-size: 11px;
+          letter-spacing: 0.16em;
+          text-transform: uppercase;
+          color: var(--text-dim);
+          margin-top: 16px;
+          height: 14px;
+        }
+        .loading-steps {
+          display: flex;
+          gap: 6px;
+          justify-content: center;
+          margin-top: 14px;
+        }
+        .loading-steps span {
+          width: 24px; height: 2px;
+          background: var(--border-strong);
+          border-radius: 2px;
+          transition: 0.25s;
+        }
+        .loading-steps span[data-active="true"] { background: var(--accent); }
+        .loading-steps span[data-done="true"] { background: var(--accent-text); }
+
+        /* Anim utility */
         @keyframes fadeSlideUp {
-          from { opacity: 0; transform: translateY(18px); }
-          to   { opacity: 1; transform: translateY(0);    }
+          from { opacity: 0; transform: translateY(14px); }
+          to { opacity: 1; transform: translateY(0); }
         }
         .anim-item {
           opacity: 0;
           animation: fadeSlideUp 0.36s ease-out both;
         }
-
-        /* ── CSS noise texture on background ── */
-        body::after {
-          content: '';
-          position: fixed;
-          inset: 0;
-          z-index: 0;
-          pointer-events: none;
-          opacity: 0.03;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)'/%3E%3C/svg%3E");
-          background-size: 300px 300px;
-        }
-
         @media (prefers-reduced-motion: reduce) {
           .anim-item { animation: none !important; opacity: 1 !important; }
-          .btn-primary, .criterion-card { transition: none !important; }
         }
-        @media (max-width: 600px) {
-          .hero { padding: 36px 16px 28px; }
-          .hero h1 { font-size: 26px; }
-          .criteria-grid { grid-template-columns: 1fr !important; }
+
+        @media (max-width: 720px) {
+          .shell { padding: 0 20px 60px; }
+          .hero { padding: 48px 0 28px; }
+          .header-inner { padding: 12px 20px; }
         }
       `}</style>
 
-      {/* Navbar */}
-      <nav className="navbar" role="navigation" aria-label="Main navigation">
-        <div className="navbar-logo">
-          <div className="logo-mark" aria-hidden="true">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-              <path d="M3 4h10M3 8h7M3 12h5" stroke="white" strokeWidth="1.8" strokeLinecap="round"/>
-            </svg>
+      <header className="header">
+        <div className="header-inner">
+          <div className="brand">
+            <div className="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M5 5h11l3 3v11H5z" />
+                <path d="M9 11h6M9 15h4" />
+              </svg>
+            </div>
+            <div className="brand-name">IELTS <em>Checker</em></div>
           </div>
-          IELTS Checker
+          <div className="header-meta">
+            <span className="pill-mini"><span className="dot" /> {modelsOnline}</span>
+            <SettingsModal lang={lang} setLang={setLang} s={s} />
+          </div>
         </div>
-        <SettingsModal lang={lang} setLang={setLang} s={s} />
-      </nav>
+      </header>
 
-      {/* Main content */}
-      <main style={{ position: "relative", maxWidth: 760, margin: "0 auto", padding: "0 16px 80px" }}>
-        {/* Hero */}
-        <section className="hero" aria-label="Hero">
-          <div className="hero-badge">
-            <svg width="7" height="7" viewBox="0 0 7 7" aria-hidden="true">
-              <circle cx="3.5" cy="3.5" r="3.5" fill="#7C9A7E"/>
-            </svg>
-            {s.badge}
-          </div>
-          <h1>
-            <em>IELTS</em> Essay Checker
-          </h1>
-          <p>{s.subtitle}</p>
+      <main className="shell">
+        <section className="hero">
+          <div className="hero-eyebrow">{eyebrow}</div>
+          <h1 className="hero-title">{heroTitle}</h1>
+          <p className="hero-sub">{heroSub}</p>
         </section>
 
         <TaskForm
@@ -665,12 +697,12 @@ Output ONLY the improved essay text. No title, no labels, no explanation, no pre
           <div
             role="alert"
             style={{
-              marginBottom: 16,
+              marginTop: 16,
               padding: "13px 16px",
-              borderRadius: 10,
-              background: "var(--error-bg)",
-              border: "1px solid var(--error-border)",
-              color: "var(--error)",
+              borderRadius: 12,
+              background: "color-mix(in oklab, oklch(0.65 0.15 25) 8%, var(--bg-elev))",
+              border: "1px solid color-mix(in oklab, oklch(0.65 0.15 25) 25%, var(--border))",
+              color: "oklch(0.4 0.15 25)",
               fontSize: 14,
               fontWeight: 500,
               display: "flex",
@@ -678,9 +710,9 @@ Output ONLY the improved essay text. No title, no labels, no explanation, no pre
               gap: 10,
             }}
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: 1 }} aria-hidden="true">
-              <circle cx="8" cy="8" r="7" stroke="#C0392B" strokeWidth="1.5"/>
-              <path d="M8 5v3.5M8 10.5v.5" stroke="#C0392B" strokeWidth="1.5" strokeLinecap="round"/>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" style={{ flexShrink: 0, marginTop: 2 }} aria-hidden="true">
+              <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5"/>
+              <path d="M8 5v3.5M8 10.5v.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
             </svg>
             {error}
           </div>
@@ -689,14 +721,22 @@ Output ONLY the improved essay text. No title, no labels, no explanation, no pre
         <ResultsPanel
           result={result}
           taskMode={taskMode}
-          loading={loading}
+          loading={false}
           s={s}
           essay={essay}
           onImprove={improve}
           improvedEssay={improvedEssay}
           loadingImprove={loadingImprove}
+          lang={lang}
         />
+
+        <footer className="footer">
+          <span>{footerLeft}</span>
+          <span>{footerRight}</span>
+        </footer>
       </main>
+
+      {loading && <LoadingOverlay progress={progress} stageIdx={stageIdx} />}
     </div>
   );
 }
