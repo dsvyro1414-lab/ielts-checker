@@ -122,16 +122,28 @@ export default function App() {
     setStageIdx(0);
 
     // Animate the loading stages while the API request is in flight.
-    const stageDur = 900;
-    const totalT = stageDur * LOADING_STAGES.length;
+    // First pass races through stages over ~6s to ~85%, then asymptotically
+    // crawls toward 99% so it never feels stuck.
+    const fastPhaseMs = 6000;
     const startT = performance.now();
     let raf = 0;
     const tick = () => {
       const elapsed = performance.now() - startT;
-      const p = Math.min(95, (elapsed / totalT) * 95);
+      let p: number;
+      if (elapsed < fastPhaseMs) {
+        p = (elapsed / fastPhaseMs) * 85;
+        const idx = Math.min(
+          LOADING_STAGES.length - 1,
+          Math.floor((elapsed / fastPhaseMs) * LOADING_STAGES.length),
+        );
+        setStageIdx(idx);
+      } else {
+        // Asymptote: approach 99 but never hit it. ~14s after fast phase → ~95%.
+        const tail = elapsed - fastPhaseMs;
+        p = 85 + (99 - 85) * (1 - Math.exp(-tail / 7000));
+        setStageIdx(LOADING_STAGES.length - 1);
+      }
       setProgress(p);
-      const idx = Math.min(LOADING_STAGES.length - 1, Math.floor(elapsed / stageDur));
-      setStageIdx(idx);
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
